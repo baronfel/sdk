@@ -18,6 +18,18 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishProtocolProviderTargets>ClickOncePublish</PublishProtocolProviderTargets>
   </PropertyGroup>
 
+  <!-- 
+    For .NET Core ClickOnce publish in Single File mode, the ClickOnce manifest generation needs to run 
+    after ComputeFilesToPublish. This is so that the bundle EXE which is included in the ClickOnce manifest 
+    is generated before the manifest is created.
+  -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <DeploymentComputeClickOnceManifestInfoDependsOn >
+      $(DeploymentComputeClickOnceManifestInfoDependsOn);
+      ComputeFilesToPublish
+    </DeploymentComputeClickOnceManifestInfoDependsOn>
+  </PropertyGroup>
+
   <!-- Ensure runtimeconfig.json is built before clickonce manifest generation -->
   <PropertyGroup Condition="'$(GenerateRuntimeConfigurationFiles)'=='true'">
     <GenerateManifestsDependsOn>
