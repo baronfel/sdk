@@ -24,7 +24,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     is generated before the manifest is created.
   -->
   <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
-    <DeploymentComputeClickOnceManifestInfoDependsOn >
+    <DeploymentComputeClickOnceManifestInfoDependsOn>
       $(DeploymentComputeClickOnceManifestInfoDependsOn);
       ComputeFilesToPublish
     </DeploymentComputeClickOnceManifestInfoDependsOn>
@@ -38,10 +38,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </GenerateManifestsDependsOn>
   </PropertyGroup>
 
-  <!-- Ensure deps.json is built before clickonce manifest generation -->
-  <PropertyGroup Condition="'$(GenerateDependencyFile)'=='true'">
+  <!-- Ensure deps.json is available before clickonce manifest generation -->
+  <PropertyGroup Condition="'$(GenerateDependencyFile)' == 'true'">
     <GenerateManifestsDependsOn>
+      _ComputeUseBuildDependencyFile;
       GenerateBuildDependencyFile;
+      GeneratePublishDependencyFile;
+      GetNetCoreRuntimeJsonFilesForClickOnce;
       $(GenerateManifestsDependsOn)
     </GenerateManifestsDependsOn>
   </PropertyGroup>
@@ -49,15 +52,21 @@ Copyright (c) .NET Foundation. All rights reserved.
   <ItemGroup Condition="'$(GenerateRuntimeConfigurationFiles)'=='true'">
     <ProjectRuntimeConfigFilesForClickOnce Include="$(ProjectRuntimeConfigFilePath)"/>
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(GenerateDependencyFile)' == 'true'">
-    <ProjectDepsFilesForClickOnce Include="$(ProjectDepsFilePath)"/>
-  </ItemGroup>
 
-  <!-- Add runtimeconfig and deps json file to item group that's included in files for clickonce publishing -->
-  <ItemGroup>
-     <NetCoreRuntimeJsonFilesForClickOnce Include="@(ProjectRuntimeConfigFilesForClickOnce);@(ProjectDepsFilesForClickOnce)"/>
-  </ItemGroup>
+  <Target Name="GetNetCoreRuntimeJsonFilesForClickOnce" 
+          Condition="'$(GenerateDependencyFile)' == 'true'">
+
+    <!-- Get correct deps json files based on _UseBuildDependencyFile -->
+    <ItemGroup>
+      <ProjectDepsFilesForClickOnce Condition="'$(_UseBuildDependencyFile)' == 'true'" Include="$(ProjectDepsFilePath)"/>
+      <ProjectDepsFilesForClickOnce Condition="'$(_UseBuildDependencyFile)' != 'true'" Include="$(PublishDepsFilePath)"/>
+    </ItemGroup>
+
+    <!-- Add runtimeconfig and deps json file to item group that's included in files for clickonce publishing -->
+    <ItemGroup>
+       <NetCoreRuntimeJsonFilesForClickOnce Include="@(ProjectRuntimeConfigFilesForClickOnce);@(ProjectDepsFilesForClickOnce)"/>
+    </ItemGroup>
+  </Target>  
 
   <!-- 
     Add necessary clickonce targets that need to run during publish process.
@@ -73,5 +82,5 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ClickOncePublishDependsOn>
   </PropertyGroup>
 
-  <Target Name="ClickOncePublish" DependsOnTargets="$(ClickOncePublishDependsOn)" />
+  <Target Name="ClickOncePublish" Condition="'$(PublishableProject)'=='true'" DependsOnTargets="$(ClickOncePublishDependsOn)" />
 </Project>
