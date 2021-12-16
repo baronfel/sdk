@@ -21,9 +21,6 @@ namespace Microsoft.DotNet.Tools.Help
 
         public static int Run(ParseResult result)
         {
-            result.HandleDebugSwitch();
-
-            result.ShowHelpOrErrorIfAppropriate();
 
             if (!string.IsNullOrEmpty(result.GetValueForArgument(HelpCommandParser.Argument)))
             {

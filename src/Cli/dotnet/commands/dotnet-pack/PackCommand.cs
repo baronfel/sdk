@@ -29,8 +29,6 @@ namespace Microsoft.DotNet.Tools.Pack
 
         public static PackCommand FromParseResult(ParseResult parseResult, string msbuildPath = null)
         {
-            parseResult.ShowHelpOrErrorIfAppropriate();
-
             var msbuildArgs = new List<string>()
             {
                 "-target:pack"
@@ -50,8 +48,6 @@ namespace Microsoft.DotNet.Tools.Pack
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

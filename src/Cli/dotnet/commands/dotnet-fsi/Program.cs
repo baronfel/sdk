@@ -11,7 +11,6 @@ namespace Microsoft.DotNet.Tools.Fsi
     {
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
             return new FsiForwardingApp(parseResult).Execute();
         }
     }

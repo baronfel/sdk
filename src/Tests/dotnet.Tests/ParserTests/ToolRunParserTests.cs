@@ -35,7 +35,6 @@ namespace Microsoft.DotNet.Tests.ParserTests
             var result = Parser.Instance.Parse("dotnet tool run dotnetsay hi");
             result.UnmatchedTokens.Should().Contain("hi");
             result.UnparsedTokens.Should().BeEmpty();
-            result.ShowHelpOrErrorIfAppropriate(); // Should not throw error
         }
 
         [Fact]
@@ -53,7 +52,6 @@ namespace Microsoft.DotNet.Tests.ParserTests
             var result = Parser.Instance.Parse("dotnet tool run dotnetsay hi1 -- hi2");
             result.UnmatchedTokens.Should().Contain("hi1");
             result.UnparsedTokens.Should().Contain("hi2");
-            result.ShowHelpOrErrorIfAppropriate(); // Should not throw error
         }
 
         [Fact]

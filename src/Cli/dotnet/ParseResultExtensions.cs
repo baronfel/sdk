@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Linq;
@@ -18,8 +19,9 @@ namespace Microsoft.DotNet.Cli
             Parser.Instance.Parse(parseResult.Tokens.Select(t => t.Value).Append("-h").ToArray()).Invoke();
         }
 
-        public static void ShowHelpOrErrorIfAppropriate(this ParseResult parseResult)
-        {
+        public static InvocationMiddleware ShowHelpOrErrorIfAppropriate => (context, next) => {
+            var parseResult = context.ParseResult;
+
             if (parseResult.Errors.Any())
             {
                 var unrecognizedTokenErrors = parseResult.Errors.Where(error =>
@@ -33,7 +35,8 @@ namespace Microsoft.DotNet.Cli
                         parseResult: parseResult);
                 }
             }
-        }
+            return next(context);
+        };
 
         public static string RootSubCommandResult(this ParseResult parseResult)
         {
@@ -169,13 +172,5 @@ namespace Microsoft.DotNet.Cli
             return propertyValues;
         }
 
-        [Conditional("DEBUG")]
-        public static void HandleDebugSwitch(this ParseResult parseResult)
-        {
-            if (parseResult.HasOption(CommonOptions.DebugOption))
-            {
-                DebugHelper.WaitForDebugger();
-            }
-        }
     }
 }

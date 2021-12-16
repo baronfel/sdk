@@ -22,8 +22,6 @@ namespace Microsoft.DotNet.Tools.Test
 
         public static TestCommand FromParseResult(ParseResult result, string[] settings, string msbuildPath = null)
         {
-            result.ShowHelpOrErrorIfAppropriate();
-
             var msbuildArgs = new List<string>()
             {
                 "-target:VSTest",
@@ -77,8 +75,6 @@ namespace Microsoft.DotNet.Tools.Test
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             var args = parseResult.GetArguments();
 
             // settings parameters are after -- (including --), these should not be considered by the parser

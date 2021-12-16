@@ -46,8 +46,6 @@ namespace Microsoft.DotNet.Tools.Run
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

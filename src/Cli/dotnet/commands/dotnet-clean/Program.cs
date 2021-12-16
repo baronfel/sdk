@@ -32,8 +32,6 @@ namespace Microsoft.DotNet.Tools.Clean
                 "-verbosity:normal"
             };
 
-            result.ShowHelpOrErrorIfAppropriate();
-
             msbuildArgs.AddRange(result.GetValueForArgument(CleanCommandParser.SlnOrProjectArgument) ?? Array.Empty<string>());
 
             msbuildArgs.Add("-target:Clean");
@@ -45,8 +43,6 @@ namespace Microsoft.DotNet.Tools.Clean
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

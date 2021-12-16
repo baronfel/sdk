@@ -29,11 +29,7 @@ namespace Microsoft.DotNet.Tools.Publish
 
         public static PublishCommand FromParseResult(ParseResult parseResult, string msbuildPath = null)
         {
-            parseResult.HandleDebugSwitch();
-
             var msbuildArgs = new List<string>();
-
-            parseResult.ShowHelpOrErrorIfAppropriate();
 
             msbuildArgs.Add("-target:Publish");
 
@@ -55,8 +51,6 @@ namespace Microsoft.DotNet.Tools.Publish
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

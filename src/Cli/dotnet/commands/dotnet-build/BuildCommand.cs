@@ -6,6 +6,7 @@ using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Cli;
 using System.CommandLine.Parsing;
 using System;
+using System.CommandLine.Invocation;
 
 namespace Microsoft.DotNet.Tools.Build
 {
@@ -26,13 +27,20 @@ namespace Microsoft.DotNet.Tools.Build
             return FromParseResult(parseResult, msbuildPath);
         }
 
+        public static InvocationMiddleware DebugMiddleware => 
+        (context, next) => {
+            if (context.ParseResult.HasOption(CommonOptions.DebugOption)) {
+                DebugHelper.WaitForDebugger();
+            }
+            return next(context);
+        };
+
+
         public static BuildCommand FromParseResult(ParseResult parseResult, string msbuildPath = null)
         {
             PerformanceLogEventSource.Log.CreateBuildCommandStart();
              
             var msbuildArgs = new List<string>();
-
-            parseResult.ShowHelpOrErrorIfAppropriate();
 
             CommonOptions.ValidateSelfContainedOptions(parseResult.HasOption(BuildCommandParser.SelfContainedOption),
                 parseResult.HasOption(BuildCommandParser.NoSelfContainedOption));
@@ -63,8 +71,6 @@ namespace Microsoft.DotNet.Tools.Build
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

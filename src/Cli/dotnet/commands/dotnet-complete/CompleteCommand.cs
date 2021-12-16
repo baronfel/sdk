@@ -32,8 +32,6 @@ namespace Microsoft.DotNet.Cli
 
             try
             {
-                result.HandleDebugSwitch();
-
                 var completions = Completions(result);
 
                 foreach (var completion in completions)

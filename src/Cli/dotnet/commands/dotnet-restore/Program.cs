@@ -27,10 +27,6 @@ namespace Microsoft.DotNet.Tools.Restore
 
         public static RestoreCommand FromParseResult(ParseResult result, string msbuildPath = null, bool noLogo = true)
         {
-            result.HandleDebugSwitch();
-
-            result.ShowHelpOrErrorIfAppropriate();
-
             var msbuildArgs = new List<string>();
 
             if (noLogo)
@@ -56,8 +52,6 @@ namespace Microsoft.DotNet.Tools.Restore
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

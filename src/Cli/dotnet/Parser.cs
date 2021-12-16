@@ -114,6 +114,10 @@ namespace Microsoft.DotNet.Cli
             .UseLocalizationResources(new CommandLineValidationMessages())
             .UseParseDirective()
             .UseSuggestDirective()
+#if DEBUG
+            .AddMiddleware(Microsoft.DotNet.Tools.Build.BuildCommand.DebugMiddleware)
+#endif
+            .AddMiddleware(Microsoft.DotNet.Cli.ParseResultExtensions.ShowHelpOrErrorIfAppropriate)
             .DisablePosixBinding()
             .EnableLegacyDoubleDashBehavior()
             .Build();

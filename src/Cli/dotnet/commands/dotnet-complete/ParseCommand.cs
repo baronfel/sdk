@@ -9,8 +9,6 @@ namespace Microsoft.DotNet.Cli
     {
         public static int Run(ParseResult result)
         {
-            result.HandleDebugSwitch();
-
             Console.WriteLine(result.Diagram());
 
             if (result.UnparsedTokens.Any())

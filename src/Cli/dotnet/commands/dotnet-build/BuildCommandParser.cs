@@ -76,7 +76,6 @@ namespace Microsoft.DotNet.Cli
             command.AddOption(CommonOptions.ArchitectureOption);
             command.AddOption(CommonOptions.OperatingSystemOption);
             command.AddOption(CommonOptions.DisableBuildServersOption);
-
             command.SetHandler(BuildCommand.Run);
 
             return command;

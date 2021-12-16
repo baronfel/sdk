@@ -17,7 +17,6 @@ namespace Microsoft.DotNet.Tools.List.ProjectToProjectReferences
         public ListProjectToProjectReferencesCommand(
             ParseResult parseResult) : base(parseResult)
         {
-            ShowHelpOrErrorIfAppropriate(parseResult);
 
             _fileOrDirectory = parseResult.GetValueForArgument(ListCommandParser.SlnOrProjectArgument);
         }

@@ -29,8 +29,6 @@ namespace Microsoft.DotNet.Tools.Store
         {
             var msbuildArgs = new List<string>();
 
-            result.ShowHelpOrErrorIfAppropriate();
-
             if (!result.HasOption(StoreCommandParser.ManifestOption))
             {
                 throw new GracefulException(LocalizableStrings.SpecifyManifests);
@@ -47,8 +45,6 @@ namespace Microsoft.DotNet.Tools.Store
 
         public static int Run(ParseResult parseResult)
         {
-            parseResult.HandleDebugSwitch();
-
             return FromParseResult(parseResult).Execute();
         }
     }

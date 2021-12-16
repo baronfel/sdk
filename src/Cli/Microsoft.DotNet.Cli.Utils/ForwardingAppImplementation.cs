@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.DotNet.Cli.Utils;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
@@ -76,10 +75,15 @@ namespace Microsoft.DotNet.Cli.Utils
             var processInfo = new ProcessStartInfo
             {
                 FileName = GetHostExeName(),
-                Arguments = ArgumentEscaper.EscapeAndConcatenateArgArrayForProcessStart(_allArgs),
                 UseShellExecute = false
             };
-
+#if NET472
+            processInfo.Arguments = ArgumentEscaper.EscapeAndConcatenateArgArrayForProcessStart(_allArgs);
+#else
+            foreach (var arg in _allArgs) {
+                processInfo.ArgumentList.Add(arg);
+            }
+#endif
             foreach (var entry in _environmentVariables)
             {
                 processInfo.Environment[entry.Key] = entry.Value;
