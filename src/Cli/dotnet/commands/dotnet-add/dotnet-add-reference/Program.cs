@@ -7,6 +7,7 @@ using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Build.Evaluation;
 using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Cli.Utils;
@@ -15,35 +16,33 @@ using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.Tools.Add.ProjectToProjectReference
 {
+    record class AddProjectToProjectReferenceOptions(string fileOrDirectory, bool interactive, string framework, string[] projectsToAdd);
+    
     internal class AddProjectToProjectReferenceCommand : CommandBase
     {
-        private readonly string _fileOrDirectory;
+        private readonly AddProjectToProjectReferenceOptions _options;
 
-        public AddProjectToProjectReferenceCommand(ParseResult parseResult) : base(parseResult)
+        public AddProjectToProjectReferenceCommand(AddProjectToProjectReferenceOptions options)
         {
-            _fileOrDirectory = parseResult.GetValueForArgument(AddCommandParser.ProjectArgument);
+            _options = options;
         }
 
-        public override int Execute()
+        public override Task<int> Execute()
         {
             var projects = new ProjectCollection();
-            bool interactive = _parseResult.GetValueForOption(AddProjectToProjectReferenceParser.InteractiveOption);
             MsbuildProject msbuildProj = MsbuildProject.FromFileOrDirectory(
                 projects,
-                _fileOrDirectory,
-                interactive);
+                _options.fileOrDirectory,
+                _options.interactive);
 
-            var frameworkString = _parseResult.GetValueForOption(AddProjectToProjectReferenceParser.FrameworkOption);
-
-            var arguments = _parseResult.GetValueForArgument(AddProjectToProjectReferenceParser.ProjectPathArgument).ToList().AsReadOnly();
-            PathUtility.EnsureAllPathsExist(arguments,
-                CommonLocalizableStrings.CouldNotFindProjectOrDirectory, true);
+            PathUtility.EnsureAllPathsExist(_options.projectsToAdd, CommonLocalizableStrings.CouldNotFindProjectOrDirectory, true);
+            
             List<MsbuildProject> refs =
-                arguments
-                    .Select((r) => MsbuildProject.FromFileOrDirectory(projects, r, interactive))
+                _options.projectsToAdd
+                    .Select((r) => MsbuildProject.FromFileOrDirectory(projects, r, _options.interactive))
                     .ToList();
 
-            if (string.IsNullOrEmpty(frameworkString))
+            if (string.IsNullOrEmpty(_options.framework))
             {
                 foreach (var tfm in msbuildProj.GetTargetFrameworks())
                 {
@@ -54,21 +53,21 @@ namespace Microsoft.DotNet.Tools.Add.ProjectToProjectReference
                             Reporter.Error.Write(GetProjectNotCompatibleWithFrameworksDisplayString(
                                                      @ref,
                                                      msbuildProj.GetTargetFrameworks().Select((fx) => fx.GetShortFolderName())));
-                            return 1;
+                            return Task.FromResult(1);
                         }
                     }
                 }
             }
             else
             {
-                var framework = NuGetFramework.Parse(frameworkString);
+                var framework = NuGetFramework.Parse(_options.framework);
                 if (!msbuildProj.IsTargetingFramework(framework))
                 {
                     Reporter.Error.WriteLine(string.Format(
                                                  CommonLocalizableStrings.ProjectDoesNotTargetFramework,
                                                  msbuildProj.ProjectRootElement.FullPath,
-                                                 frameworkString));
-                    return 1;
+                                                 _options.framework));
+                    return Task.FromResult(1);
                 }
 
                 foreach (var @ref in refs)
@@ -77,8 +76,8 @@ namespace Microsoft.DotNet.Tools.Add.ProjectToProjectReference
                     {
                         Reporter.Error.Write(GetProjectNotCompatibleWithFrameworksDisplayString(
                                                  @ref,
-                                                 new string[] { frameworkString }));
-                        return 1;
+                                                 new string[] { _options.framework }));
+                        return Task.FromResult(1);
                     }
                 }
             }
@@ -89,7 +88,7 @@ namespace Microsoft.DotNet.Tools.Add.ProjectToProjectReference
                                                             r.ProjectRootElement.FullPath)).ToList();
 
             int numberOfAddedReferences = msbuildProj.AddProjectToProjectReferences(
-                frameworkString,
+                _options.framework,
                 relativePathReferences);
 
             if (numberOfAddedReferences != 0)
@@ -97,7 +96,7 @@ namespace Microsoft.DotNet.Tools.Add.ProjectToProjectReference
                 msbuildProj.ProjectRootElement.Save();
             }
 
-            return 0;
+            return Task.FromResult(0);
         }
 
         private static string GetProjectNotCompatibleWithFrameworksDisplayString(MsbuildProject project, IEnumerable<string> frameworksDisplayStrings)

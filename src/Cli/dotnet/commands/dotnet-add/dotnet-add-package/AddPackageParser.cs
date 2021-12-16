@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.CommandLine.Completions;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.Tools;
 using Microsoft.DotNet.Tools.Add.PackageReference;
 using LocalizableStrings = Microsoft.DotNet.Tools.Add.PackageReference.LocalizableStrings;
@@ -60,6 +62,26 @@ namespace Microsoft.DotNet.Cli
             return Command;
         }
 
+        private class AddPackageReferenceCommandOptionsBinder : BinderBase<AddPackageReferenceCommandOptions> {
+            private readonly Argument<string> _packageArg;
+            private readonly Argument<string> _fileOrDirectoryArg;
+            private readonly Option<bool> _noRestoreOption;
+
+            public AddPackageReferenceCommandOptionsBinder(Argument<string> packageArg, Argument<string> fileOrDirectoryArg, Option<bool> noRestoreOption) {
+                _packageArg = packageArg;
+                _fileOrDirectoryArg = fileOrDirectoryArg;
+                _noRestoreOption = noRestoreOption;
+            }
+
+            protected override AddPackageReferenceCommandOptions GetBoundValue(BindingContext bindingContext) {
+                var fileOrDirectory = bindingContext.ParseResult.GetValueForArgument(_fileOrDirectoryArg);
+                var packageId = bindingContext.ParseResult.GetValueForArgument(_packageArg);
+                var noRestore = bindingContext.ParseResult.GetValueForOption(_noRestoreOption);
+                var forwardedArgs = bindingContext.ParseResult.OptionValuesToBeForwarded(AddPackageParser.GetCommand()).SelectMany(a => a.Split(' ', 2)).ToArray();
+                return new AddPackageReferenceCommandOptions(packageId, fileOrDirectory, noRestore, forwardedArgs);
+            }
+        }
+
         private static Command ConstructCommand()
         {
             var command = new Command("package", LocalizableStrings.AppFullName);
@@ -72,8 +94,8 @@ namespace Microsoft.DotNet.Cli
             command.AddOption(PackageDirOption);
             command.AddOption(InteractiveOption);
             command.AddOption(PrereleaseOption);
-
-            command.SetHandler((parseResult) => new AddPackageReferenceCommand(parseResult).Execute());
+            var binder = new AddPackageReferenceCommandOptionsBinder(AddPackageParser.CmdPackageArgument, AddCommandParser.ProjectArgument, NoRestoreOption);
+            command.SetHandler(((AddPackageReferenceCommandOptions options) => new AddPackageReferenceCommand(options).Execute()), binder);
 
             return command;
         }

@@ -6,41 +6,41 @@ using System.Collections.Generic;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.MSBuild;
 using Microsoft.DotNet.Tools.NuGet;
 
 namespace Microsoft.DotNet.Tools.Add.PackageReference
-{
+{   
+    record class AddPackageReferenceCommandOptions(string packageId, string fileOrDirectory, bool noRestore, string[] forwardedArgs);
+
     internal class AddPackageReferenceCommand : CommandBase
     {
-        private readonly string _packageId;
-        private readonly string _fileOrDirectory;
+        private readonly AddPackageReferenceCommandOptions _options;
 
-        public AddPackageReferenceCommand(
-            ParseResult parseResult) : base(parseResult)
+        public AddPackageReferenceCommand(AddPackageReferenceCommandOptions options)
         {
-            _fileOrDirectory = parseResult.GetValueForArgument(AddCommandParser.ProjectArgument);
-            _packageId = parseResult.GetValueForArgument(AddPackageParser.CmdPackageArgument);
+            _options = options;
         }
 
-        public override int Execute()
+        public override Task<int> Execute()
         {
             var projectFilePath = string.Empty;
 
-            if (!File.Exists(_fileOrDirectory))
+            if (!File.Exists(_options.fileOrDirectory))
             {
-                projectFilePath = MsbuildProject.GetProjectFileFromDirectory(_fileOrDirectory).FullName;
+                projectFilePath = MsbuildProject.GetProjectFileFromDirectory(_options.fileOrDirectory).FullName;
             }
             else
             {
-                projectFilePath = _fileOrDirectory;
+                projectFilePath = _options.fileOrDirectory;
             }
 
             var tempDgFilePath = string.Empty;
 
-            if (!_parseResult.HasOption(AddPackageParser.NoRestoreOption))
+            if (!_options.noRestore)
             {
                 
                 try
@@ -59,12 +59,12 @@ namespace Microsoft.DotNet.Tools.Add.PackageReference
 
             var result = NuGetCommand.Run(
                 TransformArgs(
-                    _packageId,
+                    _options.packageId,
                     tempDgFilePath,
                     projectFilePath));
             DisposeTemporaryFile(tempDgFilePath);
 
-            return result;
+            return Task.FromResult(result);
         }
 
         private void GetProjectDependencyGraph(string projectFilePath, string dgFilePath)
@@ -117,11 +117,11 @@ namespace Microsoft.DotNet.Tools.Add.PackageReference
                 projectFilePath
             };
 
-            args.AddRange(_parseResult
-                .OptionValuesToBeForwarded(AddPackageParser.GetCommand())
-                .SelectMany(a => a.Split(' ', 2)));
+            args.AddRange(_options.forwardedArgs);
+            //_parseResult
+            //    );
 
-            if (_parseResult.HasOption(AddPackageParser.NoRestoreOption))
+            if (_options.noRestore)
             {
                 args.Add("--no-restore");
             }

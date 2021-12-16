@@ -3,6 +3,7 @@
 
 using System;
 using System.CommandLine.Parsing;
+using System.Threading.Tasks;
 using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Workloads.Workload.Install;
@@ -13,11 +14,11 @@ namespace Microsoft.DotNet.Workloads.Workload.Elevate
     {
         private NetSdkMsiInstallerServer _server;
 
-        public WorkloadElevateCommand(ParseResult parseResult) : base(parseResult)
+        public WorkloadElevateCommand(ParseResult parseResult)
         {
         }
 
-        public override int Execute()
+        public override Task<int> Execute()
         {
             if (OperatingSystem.IsWindows())
             {
@@ -40,7 +41,7 @@ namespace Microsoft.DotNet.Workloads.Workload.Elevate
                 throw new GracefulException(LocalizableStrings.RequiresWindows, isUserError: false);
             }
 
-            return 0;
+            return Task.FromResult(0);
         }
     }
 }
