@@ -11,57 +11,26 @@ using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Cli.Utils;
 
 namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
-{
+{   
+    record class BuildServerShutdownOptions(ServerEnumerationFlags serversToShutdown, IBuildServerProvider serverProvider, bool useOrderedWait, IReporter reporter);
+
     internal class BuildServerShutdownCommand : CommandBase
     {
-        private readonly ServerEnumerationFlags _enumerationFlags;
-        private readonly IBuildServerProvider _serverProvider;
-        private readonly bool _useOrderedWait;
-        private readonly IReporter _reporter;
-        private readonly IReporter _errorReporter;
+        public BuildServerShutdownOptions _options { get; }
 
-        public BuildServerShutdownCommand(
-            ParseResult result,
-            IBuildServerProvider serverProvider = null,
-            bool useOrderedWait = false,
-            IReporter reporter = null)
-            : base(result)
+        public BuildServerShutdownCommand(BuildServerShutdownOptions options)
         {
-            bool msbuild = result.GetValueForOption(ServerShutdownCommandParser.MSBuildOption);
-            bool vbcscompiler = result.GetValueForOption(ServerShutdownCommandParser.VbcsOption);
-            bool razor = result.GetValueForOption(ServerShutdownCommandParser.RazorOption);
-            bool all = !msbuild && !vbcscompiler && !razor;
-
-            _enumerationFlags = ServerEnumerationFlags.None;
-            if (msbuild || all)
-            {
-                _enumerationFlags |= ServerEnumerationFlags.MSBuild;
-            }
-
-            if (vbcscompiler || all)
-            {
-                _enumerationFlags |= ServerEnumerationFlags.VBCSCompiler;
-            }
-
-            if (razor || all)
-            {
-                _enumerationFlags |= ServerEnumerationFlags.Razor;
-            }
-
-            _serverProvider = serverProvider ?? new BuildServerProvider();
-            _useOrderedWait = useOrderedWait;
-            _reporter = reporter ?? Reporter.Output;
-            _errorReporter = reporter ?? Reporter.Error;
+            _options = options;
         }
 
-        public override int Execute()
+        public override Task<int> Execute()
         {
             var tasks = StartShutdown();
 
             if (tasks.Count == 0)
             {
-                _reporter.WriteLine(LocalizableStrings.NoServersToShutdown.Green());
-                return 0;
+                _options.reporter.WriteLine(LocalizableStrings.NoServersToShutdown.Green());
+                return Task.FromResult(0);
             }
 
             bool success = true;
@@ -83,13 +52,13 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
                 tasks.RemoveAt(index);
             }
 
-            return success ? 0 : 1;
+            return Task.FromResult(success ? 0 : 1);
         }
 
         private List<(IBuildServer, Task)> StartShutdown()
         {
             var tasks = new List<(IBuildServer, Task)>();
-            foreach (var server in _serverProvider.EnumerateBuildServers(_enumerationFlags))
+            foreach (var server in _options.serverProvider.EnumerateBuildServers(_options.serversToShutdown))
             {
                 WriteShutdownMessage(server);
                 tasks.Add((server, Task.Run(() => server.Shutdown())));
@@ -100,9 +69,9 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
 
         private int WaitForResult(Task[] tasks)
         {
-            if (_useOrderedWait)
+            if (_options.useOrderedWait)
             {
-                return Task.WaitAny(tasks.First());
+                return Task.WaitAny(new [] {tasks.First()});
             }
             return Task.WaitAny(tasks);
         }
@@ -111,7 +80,7 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
         {
             if (server.ProcessId != 0)
             {
-                _reporter.WriteLine(
+                _options.reporter.WriteLine(
                     string.Format(
                         LocalizableStrings.ShuttingDownServerWithPid,
                         server.Name,
@@ -119,7 +88,7 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
             }
             else
             {
-                _reporter.WriteLine(
+                _options.reporter.WriteLine(
                     string.Format(
                         LocalizableStrings.ShuttingDownServer,
                         server.Name));
@@ -130,7 +99,7 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
         {
             if (server.ProcessId != 0)
             {
-                _reporter.WriteLine(
+                _options.reporter.WriteLine(
                     string.Format(
                         LocalizableStrings.ShutDownFailedWithPid,
                         server.Name,
@@ -139,7 +108,7 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
             }
             else
             {
-                _reporter.WriteLine(
+                _options.reporter.WriteLine(
                     string.Format(
                         LocalizableStrings.ShutDownFailed,
                         server.Name,
@@ -156,7 +125,7 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
         {
             if (server.ProcessId != 0)
             {
-                _reporter.WriteLine(
+                _options.reporter.WriteLine(
                     string.Format(
                         LocalizableStrings.ShutDownSucceededWithPid,
                         server.Name,
@@ -164,7 +133,7 @@ namespace Microsoft.DotNet.Tools.BuildServer.Shutdown
             }
             else
             {
-                _reporter.WriteLine(
+                _options.reporter.WriteLine(
                     string.Format(
                         LocalizableStrings.ShutDownSucceeded,
                         server.Name).Green());
