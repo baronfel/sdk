@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.Cli;
 using Microsoft.TemplateEngine.Abstractions;
 using Microsoft.TemplateEngine.Abstractions.TemplatePackage;
 using NuGet.Versioning;
@@ -99,7 +100,7 @@ namespace Microsoft.DotNet.Tools.New
         {
             IDictionary<string, (string path, SemanticVersion version)> bestVersionsByBucket = new Dictionary<string, (string path, SemanticVersion version)>();
 
-            Version sdkVersion = typeof(NewCommandShim).Assembly.GetName().Version;
+            Version sdkVersion = typeof(NewCommandParser).Assembly.GetName().Version;
             foreach (KeyValuePair<string, SemanticVersion> dirInfo in versionDirInfo)
             {
                 var majorMinorDirVersion = new Version(dirInfo.Value.Major, dirInfo.Value.Minor);

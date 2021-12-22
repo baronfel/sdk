@@ -106,13 +106,18 @@ namespace Microsoft.DotNet.Tools.Help
         private bool TryGetDocsLink(string commandName, out string docsLink)
         {
             var command = Cli.Parser.GetBuiltInCommand(commandName);
-            if (command != null && command as DocumentedCommand != null)
-            {
-                docsLink = (command as DocumentedCommand).DocsLink;
-                return true;
+            switch (command) {
+                case DocumentedCommand docCommand:
+                    docsLink = docCommand.DocsLink;
+                    return true;
+                // TODO: need a better marker for the dotnet-new command
+                case System.CommandLine.Command c when c.Name == "new3":
+                    docsLink = "https://aka.ms/dotnet-new";
+                    return true;
+                default:
+                    docsLink = null;
+                    return false;
             }
-            docsLink = null;
-            return false;
         }
     }
 }

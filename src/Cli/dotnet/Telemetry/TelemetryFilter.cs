@@ -92,7 +92,8 @@ namespace Microsoft.DotNet.Cli.Telemetry
             new TopLevelCommandNameAndOptionToLog
             (
                 topLevelCommandName: new HashSet<string> {"new"},
-                optionsToLog: new HashSet<Option> { NewCommandParser.LanguageOption }
+                // TODO(CH) - need a reference to the Language option from templating here
+                optionsToLog: new HashSet<Option> { } //NewCommandParser.LanguageOption }
             ),
             new TopLevelCommandNameAndOptionToLog
             (
