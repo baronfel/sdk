@@ -24,15 +24,14 @@ namespace Microsoft.DotNet.Cli
     internal static class NewCommandParser
     {
         public static readonly string DocsLink = "https://aka.ms/dotnet-new";
-        private static readonly System.CommandLine.Command Command = GetCommand();
         public const string CommandName = "new";
         private const string HostIdentifier = "dotnetcli";
-        
-        private static LoggerBinder _loggerBinder = new LoggerBinder();
-        private static TemplateEngineHostBinder _templateEngineHostBinder = new TemplateEngineHostBinder();
-        private static CallbacksBinder _callbacksBinder = new CallbacksBinder();
 
-        private static Option<bool> _disableSdkTemplates = new Option<bool>("--debug:disable-sdk-templates", () => false, "If present, prevents templates bundled in the SDK from being presented").Hide();
+        private static readonly LoggerBinder _loggerBinder = new LoggerBinder();
+        private static readonly TemplateEngineHostBinder _templateEngineHostBinder = new TemplateEngineHostBinder();
+        private static readonly CallbacksBinder _callbacksBinder = new CallbacksBinder();
+
+        private static readonly Option<bool> _disableSdkTemplates = new Option<bool>("--debug:disable-sdk-templates", () => false, "If present, prevents templates bundled in the SDK from being presented").Hide();
 
         private static bool RestoreProject(string pathToRestore)
         {
@@ -145,7 +144,7 @@ namespace Microsoft.DotNet.Cli
 
             // TODO(CH) - No way to configure/inject the ITemplateEngineHost, can we accept a binder for these dependencies instead?
             var command = Microsoft.TemplateEngine.Cli.NewCommandFactory.Create(CommandName, host, logger, callbacks);
-            
+
             // adding this option lets us look for its bound value during binding in a typed way
             command.AddOption(_disableSdkTemplates);
             return command;
