@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.Cli
             var command = Microsoft.TemplateEngine.Cli.NewCommandFactory.Create(CommandName, getEngineHost, getLogger, callbacks);
 
             // adding this option lets us look for its bound value during binding in a typed way
-            command.AddOption(_disableSdkTemplates);
+            command.AddGlobalOption(_disableSdkTemplates);
             return command;
         }
     }
