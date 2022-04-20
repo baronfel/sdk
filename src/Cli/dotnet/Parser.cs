@@ -114,7 +114,9 @@ namespace Microsoft.DotNet.Cli
             .UseHelp()
             .UseHelpBuilder(context => DotnetHelpBuilder.Instance.Value)
             .UseLocalizationResources(new CommandLineValidationMessages())
+#if DEBUG
             .UseParseDirective()
+#endif
             .UseSuggestDirective()
             .DisablePosixBinding()
             .EnableLegacyDoubleDashBehavior()

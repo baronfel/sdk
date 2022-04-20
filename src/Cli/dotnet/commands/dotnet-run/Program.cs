@@ -38,7 +38,11 @@ namespace Microsoft.DotNet.Tools.Run
                 noRestore: parseResult.HasOption(RunCommandParser.NoRestoreOption) || parseResult.HasOption(RunCommandParser.NoBuildOption),
                 interactive: parseResult.HasOption(RunCommandParser.InteractiveOption),
                 restoreArgs: parseResult.OptionValuesToBeForwarded(RunCommandParser.GetCommand()),
-                args: (parseResult.UnparsedTokens ?? Array.Empty<string>()).Concat(parseResult.UnmatchedTokens ?? Array.Empty<string>())
+                // TODO: when the legacy -- handling is removed, remove the use of UnparsedTokens here
+                // We can't remove this until then because even with the AppArguments string[] Argumentspecified,
+                // the tokenizer/parser add any arguments to the right of a -- to the UnparsedTokens array.
+                args: parseResult.GetValueForArgument(RunCommandParser.AppArguments)
+                        .Concat(parseResult.UnparsedTokens ?? Array.Empty<string>())
             );
 
             return command;

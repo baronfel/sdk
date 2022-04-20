@@ -42,7 +42,10 @@ namespace Microsoft.DotNet.Cli
 
         public static readonly Option NoSelfContainedOption = CommonOptions.NoSelfContainedOption;
 
+        public static readonly Argument<string[]> AppArguments = new Argument<string[]>("app-arguments", "Arguments to pass to the application being run");
+
         private static readonly Command Command = ConstructCommand();
+
 
         public static Command GetCommand()
         {
@@ -68,7 +71,7 @@ namespace Microsoft.DotNet.Cli
             command.AddOption(CommonOptions.VerbosityOption);
             command.AddOption(CommonOptions.ArchitectureOption);
             command.AddOption(CommonOptions.OperatingSystemOption);
-            command.TreatUnmatchedTokensAsErrors = false;
+            command.AddArgument(AppArguments);
 
             command.SetHandler(RunCommand.Run);
 
