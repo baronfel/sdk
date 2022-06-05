@@ -16,8 +16,8 @@ namespace Microsoft.DotNet.Cli
         private const string FsiDllName = @"FSharp/fsi.dll";
         private const string FsiExeName = @"FSharp/fsi.exe";
 
-        public FsiForwardingApp(ParseResult parseResult)
-            : base(GetFsiAppPath(), parseResult.GetArguments())
+        public FsiForwardingApp(string[] args)
+            : base(GetFsiAppPath(), args)
         {
         }
 

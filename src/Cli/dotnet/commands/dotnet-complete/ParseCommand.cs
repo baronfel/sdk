@@ -13,10 +13,10 @@ namespace Microsoft.DotNet.Cli
 
             Console.WriteLine(result.Diagram());
 
-            if (result.UnparsedTokens.Any())
+            if (result.UnmatchedTokens.Any())
             {
-                Console.WriteLine("Unparsed Tokens: ");
-                Console.WriteLine(string.Join(" ", result.UnparsedTokens));
+                Console.WriteLine("UnmatchedTokens Tokens: ");
+                Console.WriteLine(string.Join(" ", result.UnmatchedTokens));
             }
 
             var optionValuesToBeForwarded = result.OptionValuesToBeForwarded(ParseCommandParser.GetCommand());
