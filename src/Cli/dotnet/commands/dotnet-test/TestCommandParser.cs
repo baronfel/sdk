@@ -17,10 +17,112 @@ namespace Microsoft.DotNet.Cli
     {
         public static readonly string DocsLink = "https://aka.ms/dotnet-test";
 
-        public static readonly Argument<string> SlnOrProjectArgument = new Argument<string>(CommonLocalizableStrings.SolutionOrProjectArgumentName)
+        /// <summary>
+        /// Parser delegate that only accepts a token that is a project or solution file.
+        /// </summary>
+        /// <remarks>
+        /// S.CL usage note - OnlyTake(0) signals that this token should be returned to the
+        /// token stream for the next argument. In this way we prevent initial tokens that 
+        /// are not relevant from being captured in this argument, since the syntax is a bit
+        /// ambiguous. 
+        /// </remarks>
+        private static ParseArgument<string> IsProjectOrSln =
+            (ctx) =>
+            {
+                if (ctx.Tokens.Count == 0)
+                {
+                    ctx.OnlyTake(0);
+                    return null;
+                }
+                else
+                {
+                    var ext = System.IO.Path.GetExtension(ctx.Tokens[0].Value);
+                    if (ext.EndsWith("proj") || ext.EndsWith(".sln"))
+                    {
+                        ctx.OnlyTake(1);
+                        return ctx.Tokens[0].Value;
+                    }
+                    else
+                    {
+                        ctx.OnlyTake(0);
+                        return null;
+                    }
+                }
+            };
+
+        public static readonly Argument<string> SlnOrProjectArgument = new Argument<string>(CommonLocalizableStrings.SolutionOrProjectArgumentName, parse: IsProjectOrSln)
         {
             Description = CommonLocalizableStrings.SolutionOrProjectArgumentDescription,
             Arity = ArgumentArity.ZeroOrOne
+        };
+
+        /// <summary>
+        /// A parser that takes from the start of the token stream until the location of a -- token.
+        /// This encodes the semantic of the test command, where the grammar decided to make explicit 
+        /// use of -- to split between different sections of arguments.
+        /// </summary>
+        private static ParseArgument<string[]> ParseUntilFirstDoubleDash = ctx =>
+        {
+            if (ctx.Tokens.Count == 0)
+            {
+                ctx.OnlyTake(0);
+                return Array.Empty<string>();
+            }
+            var doubleDashIndex = ctx.Tokens.ToList().FindIndex((Token item) => item.Value.Equals("--"));
+            if (doubleDashIndex is -1)
+            {
+                ctx.OnlyTake(ctx.Tokens.Count);
+                return ctx.Tokens.Select(token => token.Value).ToArray();
+            }
+            else
+            {
+                ctx.OnlyTake(doubleDashIndex + 1);
+                return ctx.Tokens.Take(doubleDashIndex + 1).Select(token => token.Value).ToArray();
+            }
+        };
+
+        // TODO(ch): localizable names and descriptions for this
+        public static readonly Argument<string[]> ForwardedArgs = new("adapter-args", parse: ParseUntilFirstDoubleDash)
+        {
+            Arity = ArgumentArity.ZeroOrMore
+        };
+
+        private static ParseArgument<(string key, string value)[]> ParseRunSettings = ctx =>
+        {
+            if (ctx.Tokens.Count == 0)
+            {
+                ctx.OnlyTake(0);
+                return Array.Empty<(string key, string value)>();
+            }
+            var settings = new List<(string key, string value)>(ctx.Tokens.Count);
+            var consumed = 0;
+            foreach (var token in ctx.Tokens)
+            {
+                if (token.Value == "--") {
+                    consumed += 1;
+                } 
+                var parts = token.Value.Split('=', 2);
+                if (parts.Length == 2)
+                {
+                    consumed +=1;
+                    settings.Add((parts[0], parts[1]));
+                }
+                else
+                {
+                    // TODO(ch): Localizable name for this
+                    ctx.ErrorMessage = $"Argument '{token.Value}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'";
+                    ctx.OnlyTake(consumed);
+                    return Array.Empty<(string key, string value)>();
+                }
+            }
+            ctx.OnlyTake(consumed);
+            return settings.ToArray();
+        };
+
+        // TODO(ch): localizable names and descriptions for this
+        public static readonly Argument<(string key, string value)[]> InlineRunSettings = new("inline-run-settings", parse: ParseRunSettings)
+        {
+            Arity = ArgumentArity.ZeroOrMore
         };
 
         public static readonly Option<string> SettingsOption = new ForwardedOption<string>(new string[] { "-s", "--settings" }, LocalizableStrings.CmdSettingsDescription)
@@ -159,6 +261,8 @@ namespace Microsoft.DotNet.Cli
             command.AddOption(CommonOptions.VerbosityOption);
             command.AddOption(CommonOptions.ArchitectureOption);
             command.AddOption(CommonOptions.OperatingSystemOption);
+            command.AddArgument(ForwardedArgs);
+            command.AddArgument(InlineRunSettings);
 
             command.SetHandler(TestCommand.Run);
 

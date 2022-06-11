@@ -118,7 +118,7 @@ namespace Microsoft.DotNet.Cli
             //           all of the parameters of their wrapped command by design)
             //           error. so `dotnet msbuild /t:thing` throws a parse error.
             // .UseParseErrorReporting(127)
-            .UseParseErrorReporting("new")
+            .UseParseErrorReporting("new", "test")
             .UseHelp()
             .UseHelpBuilder(context => DotnetHelpBuilder.Instance.Value)
             .UseLocalizationResources(new CommandLineValidationMessages())
@@ -127,12 +127,12 @@ namespace Microsoft.DotNet.Cli
             .DisablePosixBinding()
             .Build();
 
-        private static CommandLineBuilder UseParseErrorReporting(this CommandLineBuilder builder, string commandName)
+        private static CommandLineBuilder UseParseErrorReporting(this CommandLineBuilder builder, params string[] commandName)
         {
             builder.AddMiddleware(async (context, next) =>
             {
                 CommandResult currentCommandResult = context.ParseResult.CommandResult;
-                while (currentCommandResult != null && currentCommandResult.Command.Name != commandName)
+                while (currentCommandResult != null && !(commandName.Contains(currentCommandResult.Command.Name)))
                 {
                     currentCommandResult = currentCommandResult.Parent as CommandResult;
                 }

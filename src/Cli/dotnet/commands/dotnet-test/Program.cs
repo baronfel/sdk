@@ -1,12 +1,15 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Cli.Utils;
 
@@ -17,7 +20,7 @@ namespace Microsoft.DotNet.Tools.Test
         public TestCommand(
             IEnumerable<string> msbuildArgs,
             bool noRestore,
-            string msbuildPath = null)
+            string? msbuildPath = null)
             : base(msbuildArgs, noRestore, msbuildPath)
         {
         }
@@ -32,22 +35,18 @@ namespace Microsoft.DotNet.Tools.Test
             // from the VSTest side.
             string testSessionCorrelationId = $"{Environment.ProcessId}_{Guid.NewGuid()}";
 
-            string[] args = parseResult.GetArguments();
+            var args = parseResult.GetValueForArgument(TestCommandParser.ForwardedArgs) ?? Array.Empty<string>();
+            var settings = parseResult.GetValueForArgument(TestCommandParser.InlineRunSettings) ?? Array.Empty<(string key, string value)>();
 
             if (VSTestTrace.TraceEnabled)
             {
                 string commandLineParameters = "";
-                if (args?.Length > 0)
+                if (args.Length > 0)
                 {
                     commandLineParameters = args.Aggregate((a, b) => $"{a} | {b}");
                 }
                 VSTestTrace.SafeWriteTrace(() => $"Argument list: '{commandLineParameters}'");
             }
-
-            // settings parameters are after -- (including --), these should not be considered by the parser
-            string[] settings = args.SkipWhile(a => a != "--").ToArray();
-            // all parameters before --
-            args = args.TakeWhile(a => a != "--").ToArray();
 
             // Fix for https://github.com/Microsoft/vstest/issues/1453
             // Run dll/exe directly using the VSTestForwardingApp
@@ -59,11 +58,11 @@ namespace Microsoft.DotNet.Tools.Test
             return ForwardToMsbuild(parseResult, settings, testSessionCorrelationId);
         }
 
-        private static int ForwardToMsbuild(ParseResult parseResult, string[] settings, string testSessionCorrelationId)
+        private static int ForwardToMsbuild(ParseResult parseResult, (string key, string value)[] settings, string testSessionCorrelationId)
         {
             // Workaround for https://github.com/Microsoft/vstest/issues/1503
             const string NodeWindowEnvironmentName = "MSBUILDENSURESTDOUTFORTASKPROCESSES";
-            string previousNodeWindowSetting = Environment.GetEnvironmentVariable(NodeWindowEnvironmentName);
+            string? previousNodeWindowSetting = Environment.GetEnvironmentVariable(NodeWindowEnvironmentName);
             try
             {
                 Environment.SetEnvironmentVariable(NodeWindowEnvironmentName, "1");
@@ -80,7 +79,10 @@ namespace Microsoft.DotNet.Tools.Test
             }
         }
 
-        private static int ForwardToVSTestConsole(ParseResult parseResult, string[] args, string[] settings, string testSessionCorrelationId)
+        private static string Escape(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        private static string FormatRunSetting((string key, string value) kv) => $"{Escape(kv.key)}={Escape(kv.value)}";
+
+        private static int ForwardToVSTestConsole(ParseResult parseResult, string[] args, (string key, string value)[] settings, string testSessionCorrelationId)
         {
             List<string> convertedArgs = new VSTestArgumentConverter().Convert(args, out List<string> ignoredArgs);
             if (ignoredArgs.Any())
@@ -90,7 +92,7 @@ namespace Microsoft.DotNet.Tools.Test
 
             // merge the args settings, we don't need to escape
             // one more time, there is no extra hop via msbuild
-            convertedArgs.AddRange(settings);
+            convertedArgs.AddRange(settings.Select(FormatRunSetting));
 
             if (!FeatureFlag.Instance.IsSet(FeatureFlag.DISABLE_ARTIFACTS_POSTPROCESSING))
             {
@@ -107,7 +109,7 @@ namespace Microsoft.DotNet.Tools.Test
             return exitCode;
         }
 
-        private static TestCommand FromParseResult(ParseResult result, string[] settings, string testSessionCorrelationId, string msbuildPath = null)
+        private static TestCommand FromParseResult(ParseResult result, (string key, string value)[] settings, string testSessionCorrelationId, string? msbuildPath = null)
         {
             result.ShowHelpOrErrorIfAppropriate();
 
@@ -122,27 +124,24 @@ namespace Microsoft.DotNet.Tools.Test
 
             if (settings.Any())
             {
-                //workaround for correct -- logic
-                var commandArgument = result.GetValueForArgument(TestCommandParser.SlnOrProjectArgument);
-                if(!string.IsNullOrWhiteSpace(commandArgument) && !settings.Contains(commandArgument))
+
+                var builder = new StringBuilder();
+                foreach (var kv in settings)
                 {
-                    msbuildArgs.Add(result.GetValueForArgument(TestCommandParser.SlnOrProjectArgument));
+                    builder.Append(FormatRunSetting(kv));
+                    builder.Append(';');
                 }
 
-                // skip '--' and escape every \ to be \\ and every " to be \" to survive the next hop
-                string[] escaped = settings.Skip(1).Select(s => s.Replace("\\", "\\\\").Replace("\"", "\\\"")).ToArray();
-
-                string runSettingsArg = string.Join(";", escaped);
-                msbuildArgs.Add($"-property:VSTestCLIRunSettings=\"{runSettingsArg}\"");
+                msbuildArgs.Add($"-property:VSTestCLIRunSettings=\"{builder.ToString()}\"");
             }
             else
             {
                 var argument = result.GetValueForArgument(TestCommandParser.SlnOrProjectArgument);
-                if(!string.IsNullOrWhiteSpace(argument))
+                if (!string.IsNullOrWhiteSpace(argument))
                     msbuildArgs.Add(argument);
             }
 
-            string verbosityArg = result.ForwardedOptionValues<IReadOnlyCollection<string>>(TestCommandParser.GetCommand(), "verbosity")?.SingleOrDefault() ?? null;
+            string? verbosityArg = result.ForwardedOptionValues<IReadOnlyCollection<string>>(TestCommandParser.GetCommand(), "verbosity")?.SingleOrDefault() ?? null;
             if (verbosityArg != null)
             {
                 string[] verbosity = verbosityArg.Split(':', 2);
@@ -249,7 +248,7 @@ namespace Microsoft.DotNet.Tools.Test
                 return;
             }
 
-            foreach (string env in parseResult.GetValueForOption(option))
+            foreach (string env in parseResult.GetValueForOption(option)!)
             {
                 string name = env;
                 string value = string.Empty;
