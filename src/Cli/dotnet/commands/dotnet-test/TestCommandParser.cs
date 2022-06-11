@@ -129,7 +129,7 @@ namespace Microsoft.DotNet.Cli
                     // TODO(ch): Localizable name for this
                     ctx.ErrorMessage = $"Argument '{token.Value}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'";
                     ctx.OnlyTake(consumed);
-                    return Array.Empty<(string key, string value)>();
+                    return null;
                 }
             }
             ctx.OnlyTake(consumed);
