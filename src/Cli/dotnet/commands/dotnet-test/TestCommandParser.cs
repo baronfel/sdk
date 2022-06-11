@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.IO;
 using System.Linq;
 using Microsoft.DotNet.Tools;
 using Microsoft.DotNet.Tools.Test;
@@ -18,7 +19,10 @@ namespace Microsoft.DotNet.Cli
         public static readonly string DocsLink = "https://aka.ms/dotnet-test";
 
         /// <summary>
-        /// Parser delegate that only accepts a token that is a project or solution file.
+        /// Parser delegate that only accepts a token that is a 
+        /// * project or solution file
+        /// * directory that contains a project or solution
+        /// * .dll or .exe file
         /// </summary>
         /// <remarks>
         /// S.CL usage note - OnlyTake(0) signals that this token should be returned to the
@@ -29,6 +33,9 @@ namespace Microsoft.DotNet.Cli
         private static ParseArgument<string> IsProjectOrSln =
             (ctx) =>
             {
+                bool HasProjectOrSolution(DirectoryInfo dir) =>
+                    dir.EnumerateFiles("*.*proj").Any() || dir.EnumerateFiles(".sln").Any();
+
                 if (ctx.Tokens.Count == 0)
                 {
                     ctx.OnlyTake(0);
@@ -36,14 +43,23 @@ namespace Microsoft.DotNet.Cli
                 }
                 else
                 {
-                    var ext = System.IO.Path.GetExtension(ctx.Tokens[0].Value);
-                    if (ext.EndsWith("proj") || ext.EndsWith(".sln"))
+                    var tokenValue = ctx.Tokens[0].Value;
+                    var ext = System.IO.Path.GetExtension(tokenValue);
+                    if (ext.EndsWith("proj") || ext.EndsWith(".sln") || ext.EndsWith(".dll") || ext.EndsWith(".exe"))
                     {
                         ctx.OnlyTake(1);
-                        return ctx.Tokens[0].Value;
+                        return tokenValue;
                     }
                     else
                     {
+                        var path = System.IO.Path.GetFullPath(tokenValue);
+                        var dir = new System.IO.DirectoryInfo(path);
+                        if (dir.Exists && HasProjectOrSolution(dir))
+                        {
+                            ctx.OnlyTake(1);
+                            return tokenValue;
+                        }
+
                         ctx.OnlyTake(0);
                         return null;
                     }
@@ -98,13 +114,14 @@ namespace Microsoft.DotNet.Cli
             var consumed = 0;
             foreach (var token in ctx.Tokens)
             {
-                if (token.Value == "--") {
+                if (token.Value == "--")
+                {
                     consumed += 1;
-                } 
+                }
                 var parts = token.Value.Split('=', 2);
                 if (parts.Length == 2)
                 {
-                    consumed +=1;
+                    consumed += 1;
                     settings.Add((parts[0], parts[1]));
                 }
                 else
