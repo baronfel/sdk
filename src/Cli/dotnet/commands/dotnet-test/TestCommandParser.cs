@@ -105,8 +105,7 @@ namespace Microsoft.DotNet.Cli
             return tokens.ToArray();
         };
 
-        // TODO(ch): localizable names and descriptions for this
-        public static readonly Argument<string[]> ForwardedArgs = new("adapter-args", parse: ParseUntilFirstPotentialRunSetting)
+        public static readonly Argument<string[]> ForwardedArgs = new(LocalizableStrings.AdditionalArguments, parse: ParseUntilFirstPotentialRunSetting, description: LocalizableStrings.AdditionalArgumentsDescription)
         {
             Arity = ArgumentArity.ZeroOrMore
         };
@@ -130,8 +129,8 @@ namespace Microsoft.DotNet.Cli
                 }
                 else
                 {
-                    // TODO(ch): Localizable name for this
-                    ctx.ErrorMessage = $"Argument '{token.Value}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'";
+                    //$"Argument '{token.Value}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'";
+                    ctx.ErrorMessage = String.Format(LocalizableStrings.CouldNotParseRunSetting, token.Value);
                     ctx.OnlyTake(consumed);
                     return null;
                 }
@@ -140,8 +139,7 @@ namespace Microsoft.DotNet.Cli
             return settings.ToArray();
         };
 
-        // TODO(ch): localizable names and descriptions for this
-        public static readonly Argument<(string key, string value)[]> InlineRunSettings = new("inline-run-settings", parse: ParseRunSettings)
+        public static readonly Argument<(string key, string value)[]> InlineRunSettings = new(LocalizableStrings.RunSettings, parse: ParseRunSettings, description: LocalizableStrings.RunSettingsDescription)
         {
             Arity = ArgumentArity.ZeroOrMore
         };

@@ -123,6 +123,21 @@
   <data name="AppDescription" xml:space="preserve">
     <value>Test Driver for the .NET Platform</value>
   </data>
+  <data name="AdditionalArguments" xml:space="preserve">
+    <value>forwarded arguments</value>
+  </data>
+  <data name="AdditionalArgumentsDescription" xml:space="preserve">
+    <value>Specifies extra arguments to pass to the adapter. Use a space to separate multiple arguments. If the item being tested is a project, solution, or directory this argument will be passed to MSBuild. If the item being tested is a .dll or an .exe this argument will be passed to vstest.</value>
+  </data>
+  <data name="CouldNotParseRunSetting" xml:space="preserve">
+    <value>Argument '{0}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'</value>
+  </data>
+  <data name="RunSettings" xml:space="preserve">
+    <value>run settings</value>
+  </data>
+  <data name="RunSettingsDescription" xml:space="preserve">
+    <value>KEY=VALUE pairs that replace or augment RunSettings values from any specified .runsettings files </value>
+  </data>
   <data name="CmdSettingsFile" xml:space="preserve">
     <value>SETTINGS_FILE</value>
   </data>

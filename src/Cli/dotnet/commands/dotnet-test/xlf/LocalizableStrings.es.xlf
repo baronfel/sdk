@@ -2,6 +2,16 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="es" original="../LocalizableStrings.resx">
     <body>
+      <trans-unit id="AdditionalArguments">
+        <source>forwarded arguments</source>
+        <target state="new">forwarded arguments</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AdditionalArgumentsDescription">
+        <source>Specifies extra arguments to pass to the adapter. Use a space to separate multiple arguments. If the item being tested is a project, solution, or directory this argument will be passed to MSBuild. If the item being tested is a .dll or an .exe this argument will be passed to vstest.</source>
+        <target state="new">Specifies extra arguments to pass to the adapter. Use a space to separate multiple arguments. If the item being tested is a project, solution, or directory this argument will be passed to MSBuild. If the item being tested is a .dll or an .exe this argument will be passed to vstest.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="AppFullName">
         <source>.NET Test Driver</source>
         <target state="translated">Controlador de pruebas de .NET</target>
@@ -195,6 +205,11 @@ Si no existe, se creará el directorio especificado.</target>
         <target state="translated">RESULTS_DIR</target>
         <note />
       </trans-unit>
+      <trans-unit id="CouldNotParseRunSetting">
+        <source>Argument '{0}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'</source>
+        <target state="new">Argument '{0}' could not be parsed as a RunSetting. Use a key/value pair separated with an equals character, like 'foo=bar'</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CrashDumpTypeArgumentName">
         <source>DUMP_TYPE</source>
         <target state="translated">DUMP_TYPE</target>
@@ -215,6 +230,11 @@ Si no existe, se creará el directorio especificado.</target>
         <target state="translated">Se han omitido los argumentos siguientes: "{0}"</target>
         <note />
       </trans-unit>
+      <trans-unit id="RunSettings">
+        <source>run settings</source>
+        <target state="new">run settings</target>
+        <note />
+      </trans-unit>
       <trans-unit id="RunSettingsArgumentsDescription">
         <source>
 
@@ -230,6 +250,11 @@ Argumentos RunSettings:
   Use un espacio para separar varios pares de "[nombre] =[valor]".
   Consulte https://aka.ms/vstest-runsettings-arguments para obtener información sobre los argumentos RunSettings:
   Ejemplo: dotnet test -- MSTest.DeploymentEnabled=false MSTest.MapInconclusiveToFailed=True</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RunSettingsDescription">
+        <source>KEY=VALUE pairs that replace or augment RunSettings values from any specified .runsettings files </source>
+        <target state="new">KEY=VALUE pairs that replace or augment RunSettings values from any specified .runsettings files </target>
         <note />
       </trans-unit>
       <trans-unit id="cmdCollectFriendlyName">
