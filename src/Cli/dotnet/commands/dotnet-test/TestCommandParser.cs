@@ -72,33 +72,41 @@ namespace Microsoft.DotNet.Cli
             Arity = ArgumentArity.ZeroOrOne
         };
 
+        public static (bool success, string key, string value) TryParseRunSetting (string token) {
+            var parts = token.Split('=');
+            if (parts.Length == 2) {
+                return (true, parts[0], parts[1]);
+            }
+            return (false, null, null);
+        }
+
         /// <summary>
-        /// A parser that takes from the start of the token stream until the location of a -- token.
-        /// This encodes the semantic of the test command, where the grammar decided to make explicit 
-        /// use of -- to split between different sections of arguments.
+        /// A parser that takes from the start of the token stream until the the first argument that could be a RunSetting
         /// </summary>
-        private static ParseArgument<string[]> ParseUntilFirstDoubleDash = ctx =>
+        private static ParseArgument<string[]> ParseUntilFirstPotentialRunSetting = ctx =>
         {
             if (ctx.Tokens.Count == 0)
             {
                 ctx.OnlyTake(0);
                 return Array.Empty<string>();
             }
-            var doubleDashIndex = ctx.Tokens.ToList().FindIndex((Token item) => item.Value.Equals("--"));
-            if (doubleDashIndex is -1)
-            {
-                ctx.OnlyTake(ctx.Tokens.Count);
-                return ctx.Tokens.Select(token => token.Value).ToArray();
+            var tokens = new List<string>();
+            foreach (var token in ctx.Tokens) {
+                var (success, key, value) = TryParseRunSetting(token.Value);
+                if (success) {
+                    break;
+                }
+                else 
+                {
+                    tokens.Add(token.Value);
+                }
             }
-            else
-            {
-                ctx.OnlyTake(doubleDashIndex + 1);
-                return ctx.Tokens.Take(doubleDashIndex + 1).Select(token => token.Value).ToArray();
-            }
+            ctx.OnlyTake(tokens.Count);
+            return tokens.ToArray();
         };
 
         // TODO(ch): localizable names and descriptions for this
-        public static readonly Argument<string[]> ForwardedArgs = new("adapter-args", parse: ParseUntilFirstDoubleDash)
+        public static readonly Argument<string[]> ForwardedArgs = new("adapter-args", parse: ParseUntilFirstPotentialRunSetting)
         {
             Arity = ArgumentArity.ZeroOrMore
         };
@@ -114,10 +122,6 @@ namespace Microsoft.DotNet.Cli
             var consumed = 0;
             foreach (var token in ctx.Tokens)
             {
-                if (token.Value == "--")
-                {
-                    consumed += 1;
-                }
                 var parts = token.Value.Split('=', 2);
                 if (parts.Length == 2)
                 {
