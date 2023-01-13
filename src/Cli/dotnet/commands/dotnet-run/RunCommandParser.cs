@@ -75,6 +75,8 @@ namespace Microsoft.DotNet.Cli
 
             command.SetHandler(RunCommand.Run);
 
+            command.TreatUnmatchedTokensAsErrors = false;
+
             return command;
         }
     }

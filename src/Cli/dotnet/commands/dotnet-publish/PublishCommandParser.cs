@@ -83,6 +83,8 @@ namespace Microsoft.DotNet.Cli
 
             command.SetHandler(PublishCommand.Run);
 
+            command.TreatUnmatchedTokensAsErrors = false;
+
             return command;
         }
     }

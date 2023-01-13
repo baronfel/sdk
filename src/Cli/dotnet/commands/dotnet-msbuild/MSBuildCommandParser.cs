@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.Tools.MSBuild
             };
 
             command.SetHandler((ParseResult parseResult) => MSBuildCommand.Run(parseResult.GetValue(Arguments)));
-
+            command.TreatUnmatchedTokensAsErrors = false;
             return command;
         }
     }

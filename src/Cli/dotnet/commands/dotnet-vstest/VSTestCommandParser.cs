@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.Cli
 
             command.SetHandler(VSTestCommand.Run);
 
+            command.TreatUnmatchedTokensAsErrors = false;
+
             return command;
         }
     }

@@ -68,6 +68,7 @@ namespace Microsoft.DotNet.Cli
 
             command.AddArgument(SlnOrProjectArgument);
             command.AddOption(CommonOptions.DisableBuildServersOption);
+            command.TreatUnmatchedTokensAsErrors = false;
 
             foreach (var option in FullRestoreOptions())
             {

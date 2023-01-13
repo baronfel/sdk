@@ -77,6 +77,8 @@ namespace Microsoft.DotNet.Cli
             command.AddOption(CommonOptions.OperatingSystemOption);
             command.AddOption(CommonOptions.DisableBuildServersOption);
 
+            command.TreatUnmatchedTokensAsErrors = false;
+
             command.SetHandler(BuildCommand.Run);
 
             return command;
