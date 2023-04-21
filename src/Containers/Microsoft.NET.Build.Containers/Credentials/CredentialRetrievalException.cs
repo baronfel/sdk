@@ -12,4 +12,9 @@ internal sealed class CredentialRetrievalException : Exception
             Resource.FormatString(nameof(Strings.FailedRetrievingCredentials), registry, innerException.Message),
             innerException)
 	{ }
+
+    public CredentialRetrievalException(string registry, string innerMessage)
+		: base(
+            Resource.FormatString(nameof(Strings.FailedRetrievingCredentials), registry, innerMessage))
+	{ }
 }

@@ -42,6 +42,11 @@
         <target state="translated">CONTAINER2012: non è stato possibile riconoscere il registro '{0}'.</target>
         <note>{StrBegin="CONTAINER2012: "}</note>
       </trans-unit>
+      <trans-unit id="CredentialsNotFoundForRegistry">
+        <source>No credentials found for registry.</source>
+        <target state="new">No credentials found for registry.</target>
+        <note>{StrBegin="CONTAINER2001: "}</note>
+      </trans-unit>
       <trans-unit id="DockerInfoFailed">
         <source>CONTAINER3002: Failed to get docker info({0})\n{1}\n{2}</source>
         <target state="translated">CONTAINER3002: non è stato possibile ottenere le informazioni su Docker ({0})\n{1}\n{2}</target>

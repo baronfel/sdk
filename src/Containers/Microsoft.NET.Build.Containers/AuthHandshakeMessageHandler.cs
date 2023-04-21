@@ -16,6 +16,8 @@ using Microsoft.NET.Build.Containers.Resources;
 
 namespace Microsoft.NET.Build.Containers;
 
+public record CredentialRequestContext(string Registry);
+
 /// <summary>
 /// A delegating handler that performs the Docker auth handshake as described <see href="https://docs.docker.com/registry/spec/auth/token/">in their docs</see> if a request isn't authenticated
 /// </summary>
@@ -64,7 +66,12 @@ internal sealed partial class AuthHandshakeMessageHandler : DelegatingHandler
         return false;
     }
 
-    public AuthHandshakeMessageHandler(HttpMessageHandler innerHandler) : base(innerHandler) { }
+    private Func<CredentialRequestContext, ValueTask<DockerCredentials>> CredsProvider { get; init; }
+
+    public AuthHandshakeMessageHandler(Func<CredentialRequestContext, ValueTask<DockerCredentials>> credsProvider, HttpMessageHandler innerHandler) : base(innerHandler)
+    {
+        CredsProvider = credsProvider;
+    }
 
     /// <summary>
     /// Response to a request to get a token using some auth.
@@ -76,6 +83,70 @@ internal sealed partial class AuthHandshakeMessageHandler : DelegatingHandler
     {
         public string ResolvedToken => token ?? access_token ?? throw new ArgumentException(Resource.GetString(nameof(Strings.InvalidTokenResponse)));
     }
+
+    private static ValueTask<DockerCredentials?> ReadFromEnvironmentAsync(CredentialRequestContext context) {
+        // Allow overrides for auth via environment variables
+        string? credU = Environment.GetEnvironmentVariable(ContainerHelpers.HostObjectUser);
+        string? credP = Environment.GetEnvironmentVariable(ContainerHelpers.HostObjectPass);
+
+        if (!string.IsNullOrEmpty(credU) && !string.IsNullOrEmpty(credP))
+        {
+            return ValueTask.FromResult<DockerCredentials?>(new DockerCredentials(credU, credP));
+        }
+        else
+        {
+            return ValueTask.FromResult<DockerCredentials?>(null);
+        }
+    }
+
+    private static async ValueTask<DockerCredentials?> ReadFromDockerConfigAsync(CredentialRequestContext context)
+    {
+        try
+        {
+            return await Valleysoft.DockerCredsProvider.CredsProvider.GetCredentialsAsync(context.Registry).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            throw new CredentialRetrievalException(context.Registry, e);
+        }
+    }
+
+    private static Func<Context, ValueTask<Result?>> ComposeCredentialSources<Context, Result>(Func<Context, ValueTask<Result?>> credsProvider1, Func<Context, ValueTask<Result?>> credsProvider2) => async (Context context) =>
+    {
+        if (await credsProvider1(context).ConfigureAwait(false) is {} creds1)
+        {
+            return creds1;
+        }
+        else
+        {
+            if (await credsProvider2(context).ConfigureAwait(false) is { } creds2)
+            {
+                return creds2;
+            }
+            else
+            {
+                return default(Result);
+            }
+        }
+    };
+
+    private static Func<CredentialRequestContext, ValueTask<DockerCredentials>> EnforceCredentialsFound(Func<CredentialRequestContext, ValueTask<DockerCredentials?>> credsFinder) => async (CredentialRequestContext context) => {
+        if (await credsFinder(context).ConfigureAwait(false) is { } creds)
+        {
+            return creds;
+        }
+        else
+        {
+            throw new CredentialRetrievalException(context.Registry, Resource.GetString(nameof(Strings.CredentialsNotFoundForRegistry)));
+        }
+    };
+
+    public static Func<CredentialRequestContext, ValueTask<DockerCredentials>> DefaultConfigurationProvider =
+        EnforceCredentialsFound(
+            ComposeCredentialSources<CredentialRequestContext, DockerCredentials>(
+                ReadFromEnvironmentAsync,
+                ReadFromDockerConfigAsync
+                ));
 
     /// <summary>
     /// Uses the authentication information from a 401 response to perform the authentication dance for a given registry.
@@ -89,29 +160,9 @@ internal sealed partial class AuthHandshakeMessageHandler : DelegatingHandler
     /// <returns></returns>
     private async Task<AuthenticationHeaderValue?> GetAuthenticationAsync(string registry, string scheme, Uri realm, string service, string? scope, CancellationToken cancellationToken)
     {
-        // Allow overrides for auth via environment variables
-        string? credU = Environment.GetEnvironmentVariable(ContainerHelpers.HostObjectUser);
-        string? credP = Environment.GetEnvironmentVariable(ContainerHelpers.HostObjectPass);
 
-        // fetch creds for the host
-        DockerCredentials? privateRepoCreds;
+        DockerCredentials privateRepoCreds = await CredsProvider(new CredentialRequestContext(registry)).ConfigureAwait(false);
 
-        if (!string.IsNullOrEmpty(credU) && !string.IsNullOrEmpty(credP))
-        {
-            privateRepoCreds = new DockerCredentials(credU, credP);
-        }
-        else
-        {
-            try
-            {
-                privateRepoCreds = await CredsProvider.GetCredentialsAsync(registry).ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                throw new CredentialRetrievalException(registry, e);
-            }
-        }
-        
         if (scheme is "Basic")
         {
             var basicAuth = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{privateRepoCreds.Username}:{privateRepoCreds.Password}")));

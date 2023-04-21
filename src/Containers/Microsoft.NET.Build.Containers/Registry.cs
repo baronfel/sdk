@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Valleysoft.DockerCredsProvider;
 
 namespace Microsoft.NET.Build.Containers;
 
@@ -36,11 +37,11 @@ internal sealed class Registry
     /// </summary>
     private string RegistryName { get; init; }
 
-    public Registry(Uri baseUri)
+    public Registry(Uri baseUri, Func<CredentialRequestContext, ValueTask<DockerCredentials>>? credentialProvider = null)
     {
         BaseUri = baseUri;
         RegistryName = DeriveRegistryName(baseUri);
-        _client = CreateClient();
+        _client = CreateClient(credentialProvider);
     }
 
     private static string DeriveRegistryName(Uri baseUri)
@@ -506,9 +507,13 @@ internal sealed class Registry
         return _client;
     }
 
-    private HttpClient CreateClient()
+    private HttpClient CreateClient(Func<CredentialRequestContext, ValueTask<DockerCredentials>>? credsProvider = null)
     {
-        HttpMessageHandler clientHandler = new AuthHandshakeMessageHandler(new SocketsHttpHandler() { PooledConnectionLifetime = TimeSpan.FromMilliseconds(10 /* total guess */) });
+        SocketsHttpHandler socketsHandler = new() {
+            PooledConnectionLifetime = TimeSpan.FromMilliseconds(10 /* total guess */),
+            UseCookies = false,
+        };
+        HttpMessageHandler clientHandler = new AuthHandshakeMessageHandler(credsProvider ?? AuthHandshakeMessageHandler.DefaultConfigurationProvider, socketsHandler);
 
         if(IsAmazonECRRegistry)
         {

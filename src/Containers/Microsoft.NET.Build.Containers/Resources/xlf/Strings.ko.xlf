@@ -42,6 +42,11 @@
         <target state="translated">CONTAINER2012: 레지스트리 '{0}'을(를) 인식할 수 없습니다.</target>
         <note>{StrBegin="CONTAINER2012: "}</note>
       </trans-unit>
+      <trans-unit id="CredentialsNotFoundForRegistry">
+        <source>No credentials found for registry.</source>
+        <target state="new">No credentials found for registry.</target>
+        <note>{StrBegin="CONTAINER2001: "}</note>
+      </trans-unit>
       <trans-unit id="DockerInfoFailed">
         <source>CONTAINER3002: Failed to get docker info({0})\n{1}\n{2}</source>
         <target state="translated">CONTAINER3002: 도커 정보({0})를 가져오지 못했습니다.\n{1}\n{2}</target>

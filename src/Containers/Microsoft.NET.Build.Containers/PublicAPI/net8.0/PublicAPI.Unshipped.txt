@@ -11,6 +11,10 @@ Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError.InvalidPortNumber
 Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError.InvalidPortType = 2 -> Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError
 Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError.MissingPortNumber = 0 -> Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError
 Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError.UnknownPortFormat = Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError.InvalidPortNumber | Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError.InvalidPortType -> Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError
+Microsoft.NET.Build.Containers.CredentialRequestContext
+Microsoft.NET.Build.Containers.CredentialRequestContext.Registry.get -> string!
+Microsoft.NET.Build.Containers.CredentialRequestContext.Registry.init -> void
+Microsoft.NET.Build.Containers.CredentialRequestContext.CredentialRequestContext(string! Registry) -> void
 Microsoft.NET.Build.Containers.Descriptor
 Microsoft.NET.Build.Containers.Descriptor.Annotations.get -> System.Collections.Generic.Dictionary<string!, string?>?
 Microsoft.NET.Build.Containers.Descriptor.Annotations.init -> void
