@@ -2,6 +2,22 @@
 Microsoft.NET.Build.Containers.BaseImageNotFoundException
 Microsoft.NET.Build.Containers.Constants
 Microsoft.NET.Build.Containers.Tasks.ComputeDotnetBaseImageTag.ComputeDotnetBaseImageTag() -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest
+Microsoft.NET.Build.Containers.Tasks.GetManifest.BaseRegistry.get -> string!
+Microsoft.NET.Build.Containers.Tasks.GetManifest.BaseRegistry.set -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.BaseRepository.get -> string!
+Microsoft.NET.Build.Containers.Tasks.GetManifest.BaseRepository.set -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.BaseTag.get -> string!
+Microsoft.NET.Build.Containers.Tasks.GetManifest.BaseTag.set -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.Cancel() -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.GetManifest() -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.ManifestList.get -> Microsoft.Build.Framework.ITaskItem?
+Microsoft.NET.Build.Containers.Tasks.GetManifest.ManifestList.set -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.Manifests.get -> Microsoft.Build.Framework.ITaskItem![]!
+Microsoft.NET.Build.Containers.Tasks.GetManifest.Manifests.set -> void
+Microsoft.NET.Build.Containers.Tasks.GetManifest.StoragePath.get -> string!
+Microsoft.NET.Build.Containers.Tasks.GetManifest.StoragePath.set -> void
+override Microsoft.NET.Build.Containers.Tasks.GetManifest.Execute() -> bool
 static Microsoft.NET.Build.Containers.ContainerBuilder.ContainerizeAsync(System.IO.DirectoryInfo! publishDirectory, string! workingDir, string! baseRegistry, string! baseImageName, string! baseImageTag, string![]! entrypoint, string![]? entrypointArgs, string! imageName, string![]! imageTags, string? outputRegistry, System.Collections.Generic.Dictionary<string!, string!>! labels, Microsoft.NET.Build.Containers.Port[]? exposedPorts, System.Collections.Generic.Dictionary<string!, string!>! envVars, string! containerRuntimeIdentifier, string! ridGraphPath, string! localContainerDaemon, string? containerUser, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
 static readonly Microsoft.NET.Build.Containers.Constants.Version -> string!
 Microsoft.NET.Build.Containers.ContainerBuilder
@@ -137,6 +153,8 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerConfigurat
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerConfiguration.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifest.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifest.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifestPath.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifestPath.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ImageName.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ImageName.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ImageTags.get -> string![]!
@@ -151,6 +169,8 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.get -> stri
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.StoragePath.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.StoragePath.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolExe.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolExe.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolPath.get -> string!

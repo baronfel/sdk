@@ -96,6 +96,8 @@ public sealed partial class CreateNewImage : Microsoft.Build.Utilities.Task, ICa
 
         // at this point we're done with modifications and are just pushing the data other places
         GeneratedContainerManifest = JsonSerializer.Serialize(builtImage.Manifest);
+        GeneratedContainerManifestPath = Path.Combine(StoragePath, "generated.container.manifest.json");
+        await File.WriteAllTextAsync(GeneratedContainerManifestPath, GeneratedContainerManifest).ConfigureAwait(false);
         GeneratedContainerConfiguration = builtImage.Config;
 
         foreach (ImageReference destinationImageReference in destinationImageReferences)
@@ -167,7 +169,7 @@ public sealed partial class CreateNewImage : Microsoft.Build.Utilities.Task, ICa
             else
             {
                 ContainerHelpers.ParsePortError parsedErrors = (ContainerHelpers.ParsePortError)errors!;
-                
+
                 if (parsedErrors.HasFlag(ContainerHelpers.ParsePortError.MissingPortNumber))
                 {
                     Log.LogErrorWithCodeFromResources(nameof(Strings.MissingPortNumber), port.ItemSpec);

@@ -47,6 +47,8 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerConfigurat
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerConfiguration.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifest.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifest.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifestPath.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GeneratedContainerManifestPath.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ImageName.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ImageName.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ImageTags.get -> string![]!
@@ -61,6 +63,8 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.get -> stri
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.StoragePath.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.StoragePath.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.WorkingDirectory.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.WorkingDirectory.set -> void
 override Microsoft.NET.Build.Containers.Tasks.ComputeDotnetBaseImageTag.Execute() -> bool

@@ -16,9 +16,9 @@ namespace Microsoft.NET.Build.Containers;
 
 internal sealed class Registry
 {
-    private const string DockerManifestV2 = "application/vnd.docker.distribution.manifest.v2+json";
-    private const string DockerManifestListV2 = "application/vnd.docker.distribution.manifest.list.v2+json";
-    private const string DockerContainerV1 = "application/vnd.docker.container.image.v1+json";
+    internal const string DockerManifestV2 = "application/vnd.docker.distribution.manifest.v2+json";
+    internal const string DockerManifestListV2 = "application/vnd.docker.distribution.manifest.list.v2+json";
+    internal const string DockerContainerV1 = "application/vnd.docker.container.image.v1+json";
 
     /// <summary>
     /// Whether we should upload blobs via chunked upload (enabled by default, but disabled for certain registries in conjunction with the explicit support check below).
@@ -210,7 +210,7 @@ internal sealed class Registry
             cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<HttpResponseMessage> GetManifestAsync(string repositoryName, string reference, CancellationToken cancellationToken)
+    internal async Task<HttpResponseMessage> GetManifestAsync(string repositoryName, string reference, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var client = GetClient();

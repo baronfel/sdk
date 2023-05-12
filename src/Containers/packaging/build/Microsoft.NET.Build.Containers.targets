@@ -180,11 +180,34 @@
   <PropertyGroup>
     <PublishContainerDependsOn>
       _ContainerVerifySDKVersion;
-      ComputeContainerConfig
+      ComputeContainerConfig;
+      _DownloadImageManifest;
+      _ComputePublishFiles;
     </PublishContainerDependsOn>
   </PropertyGroup>
 
-  <Target Name="PublishContainer" DependsOnTargets="$(PublishContainerDependsOn)">
+  <Target Name="_DownloadImageManifest">
+    <GetManifest BaseRegistry="$(ContainerBaseRegistry)" BaseRepository="$(ContainerBaseName)" BaseTag="$(ContainerBaseTag)"
+      StoragePath="$(IntermediateOutputPath)">
+      <Output TaskParameter="ManifestList" ItemName="ReadManifest" />
+      <Output TaskParameter="Manifests" ItemName="ChildManifests" />
+    </GetManifest>
+    <ItemGroup>
+      <FileWrites Include="@(ReadManifest)" />
+      <FileWrites Include="@(ChildManifests)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_ComputePublishFiles">
+    <ItemGroup>
+      <_ContainerPublishItems Include="$(PublishDir)/**/*/*" />
+      <_GeneratedContainerManifestPath Include="$(IntermediateOutputPath)generated.container.manifest.json" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PublishContainer" DependsOnTargets="$(PublishContainerDependsOn)"
+    Inputs="@(_ContainerPublishItems);@(ManifestList);@(Manifests);"
+    Outputs="@(_GeneratedContainerManifestPath);">
 
     <PropertyGroup Condition="'$(DOTNET_HOST_PATH)' == ''">
       <DotNetHostDirectory>$(NetCoreRoot)</DotNetHostDirectory>
@@ -211,10 +234,14 @@
                     ContainerEnvironmentVariables="@(ContainerEnvironmentVariables)"
                     ContainerRuntimeIdentifier="$(ContainerRuntimeIdentifier)"
                     ContainerUser="$(ContainerUser)"
-                    RuntimeIdentifierGraphPath="$(RuntimeIdentifierGraphPath)"> <!-- The RID graph path is provided as a property by the SDK. -->
-
+                    RuntimeIdentifierGraphPath="$(RuntimeIdentifierGraphPath)"
+                    StoragePath="$(IntermediateOutputPath)"> <!-- The RID graph path is provided as a property by the SDK. -->
       <Output TaskParameter="GeneratedContainerManifest" PropertyName="GeneratedContainerManifest" />
       <Output TaskParameter="GeneratedContainerConfiguration" PropertyName="GeneratedContainerConfiguration" />
+      <Output TaskParameter="GeneratedContainerManifestPath" ItemName="_GeneratedContainerManifestPath"  />
     </CreateNewImage>
+    <ItemGroup>
+      <FileWrites Include="@(_GeneratedContainerManifestPath)" />
+    </ItemGroup>
   </Target>
 </Project>

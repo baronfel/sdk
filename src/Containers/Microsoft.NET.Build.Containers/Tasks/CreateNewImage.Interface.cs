@@ -125,11 +125,17 @@ partial class CreateNewImage
     /// </summary>
     public string ContainerUser { get; set; }
 
+    [Required]
+    public string StoragePath { get; set; }
+
     [Output]
     public string GeneratedContainerManifest { get; set; }
 
     [Output]
     public string GeneratedContainerConfiguration { get; set; }
+
+    [Output]
+    public string GeneratedContainerManifestPath { get; set; }
 
     public CreateNewImage()
     {
@@ -153,9 +159,11 @@ partial class CreateNewImage
         RuntimeIdentifierGraphPath = "";
         LocalContainerDaemon = "";
         ContainerUser = "";
+        StoragePath = "";
 
         GeneratedContainerConfiguration = "";
         GeneratedContainerManifest = "";
+        GeneratedContainerManifestPath = "";
 
         TaskResources = Resource.Manager;
     }
