@@ -30,6 +30,7 @@ namespace Microsoft.DotNet.Cli
 
             command.Arguments.Add(PathArgument);
             command.Options.Add(PositionOption);
+            command.TreatUnmatchedTokensAsErrors = false;
 
             command.SetAction(CompleteCommand.Run);
 

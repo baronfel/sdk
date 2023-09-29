@@ -169,6 +169,7 @@ namespace Microsoft.DotNet.Cli
             yield return forceOption;
 
             yield return CommonOptions.PropertiesOption;
+            yield return CommonOptions.TargetOption;
 
             if (includeRuntimeOption)
             {

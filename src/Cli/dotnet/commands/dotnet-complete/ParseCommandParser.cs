@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.Cli
             {
                 Hidden = true
             };
+            command.TreatUnmatchedTokensAsErrors = false;
 
             command.SetAction(ParseCommand.Run);
 

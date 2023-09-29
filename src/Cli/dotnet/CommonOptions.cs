@@ -19,6 +19,13 @@ namespace Microsoft.DotNet.Cli
             }.ForwardAsProperty()
             .AllowSingleArgPerToken();
 
+        public static CliOption<string[]> TargetOption =
+            new ForwardedOption<string[]>("--target", "-target", "/target", "/t", "-t", "--t")
+            {
+                Hidden = true
+            }.ForwardAsMany(o => o.Select(t => $"-target:{t}"))
+            .AllowSingleArgPerToken();
+
         public static CliOption<VerbosityOptions> VerbosityOption =
             new ForwardedOption<VerbosityOptions>("--verbosity", "-v")
             {
