@@ -37,7 +37,7 @@ public class EndToEndTests : IDisposable
     {
         _loggerFactory.Dispose();
     }
-    
+
     [DockerAvailableFact]
     public async Task ApiEndToEndWithRegistryPushAndPull()
     {
@@ -310,14 +310,12 @@ public class EndToEndTests : IDisposable
             "--rm",
             "--name",
             containerName,
-            "--publish",
-            "5017:8080",
+            "-P",
             "--detach",
             $"{DockerRegistryManager.LocalRegistry}/{imageName}:{imageTag}")
         .Execute();
         processResult.Should().Pass();
         Assert.NotNull(processResult.StdOut);
-
         string appContainerId = processResult.StdOut.Trim();
 
         bool everSucceeded = false;
@@ -327,12 +325,19 @@ public class EndToEndTests : IDisposable
 
         if (projectType == "webapi")
         {
+            var portCommand =
+            ContainerCli.PortCommand(_testOutput, containerName, 8080)
+                .Execute();
+            portCommand.Should().Pass();
+            var port = portCommand.StdOut.Trim();
+            _testOutput.WriteLine($"Discovered port was '{port}'");
+            var appUri = new Uri($"http://{port}", UriKind.Absolute).Port;
             // Give the server a moment to catch up, but no more than necessary.
             for (int retry = 0; retry < 10; retry++)
             {
                 try
                 {
-                    var response = await client.GetAsync("http://localhost:5017/weatherforecast").ConfigureAwait(false);
+                    var response = await client.GetAsync($"{appUri}/weatherforecast").ConfigureAwait(false);
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -347,15 +352,15 @@ public class EndToEndTests : IDisposable
             ContainerCli.LogsCommand(_testOutput, appContainerId)
             .Execute()
             .Should().Pass();
-            Assert.True(everSucceeded, "http://localhost:5017/weatherforecast never responded.");
+            Assert.True(everSucceeded, $"{appUri}/weatherforecast never responded.");
         }
         else
         {
             var containerLogs =
             ContainerCli.LogsCommand(_testOutput, appContainerId)
-            .Execute()
-            .Should().Pass()
-            .And.HaveStdOutContaining("Worker running at");
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Worker running at");
         }
 
         ContainerCli.StopCommand(_testOutput, appContainerId)
