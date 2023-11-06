@@ -164,47 +164,6 @@ namespace Microsoft.DotNet.Cli
                 null;
         }
 
-        public static bool UsingRunCommandShorthandProjectOption(this ParseResult parseResult)
-        {
-            if (parseResult.HasOption(RunCommandParser.PropertyOption) && parseResult.GetValue(RunCommandParser.PropertyOption).Any())
-            {
-                var projVals = parseResult.GetRunCommandShorthandProjectValues();
-                if (projVals.Any())
-                {
-                    if (projVals.Count() != 1 || parseResult.HasOption(RunCommandParser.ProjectOption))
-                    {
-                        throw new GracefulException(Tools.Run.LocalizableStrings.OnlyOneProjectAllowed);
-                    }
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static IEnumerable<string> GetRunCommandShorthandProjectValues(this ParseResult parseResult)
-        {
-            var properties = GetRunPropertyOptions(parseResult, true);
-            return properties.Where(property => !property.Contains("="));
-        }
-
-        public static IEnumerable<string> GetRunCommandPropertyValues(this ParseResult parseResult)
-        {
-            var shorthandProperties = GetRunPropertyOptions(parseResult, true)
-                .Where(property => property.Contains("="));
-            var longhandProperties = GetRunPropertyOptions(parseResult, false);
-            return longhandProperties.Concat(shorthandProperties);
-        }
-
-        private static IEnumerable<string> GetRunPropertyOptions(ParseResult parseResult, bool shorthand)
-        {
-            var optionString = shorthand ? "-p" : "--property";
-            var options =
-                parseResult.CommandResult.Children.OfType<OptionResult>();
-            var propertyOptions = options.Where(o => o.Option.Name.Equals(optionString, StringComparison.OrdinalIgnoreCase) || o.Option.Aliases.Contains(optionString, StringComparer.OrdinalIgnoreCase));
-            var propertyValues = propertyOptions.SelectMany(o => o.Tokens.Select(t => t.Value)).ToArray();
-            return propertyValues;
-        }
-
         [Conditional("DEBUG")]
         public static void HandleDebugSwitch(this ParseResult parseResult)
         {

@@ -3,7 +3,6 @@
 
 using System.CommandLine;
 using Microsoft.DotNet.Cli;
-using Microsoft.DotNet.Cli.Utils;
 using Parser = Microsoft.DotNet.Cli.Parser;
 
 namespace Microsoft.DotNet.Tools.Run
@@ -19,12 +18,6 @@ namespace Microsoft.DotNet.Tools.Run
         public static RunCommand FromParseResult(ParseResult parseResult)
         {
             var project = parseResult.GetValue(RunCommandParser.ProjectOption);
-            if (parseResult.UsingRunCommandShorthandProjectOption())
-            {
-                Reporter.Output.WriteLine(LocalizableStrings.RunCommandProjectAbbreviationDeprecated.Yellow());
-                project = parseResult.GetRunCommandShorthandProjectValues().FirstOrDefault();
-            }
-
             var command = new RunCommand(
                 configuration: parseResult.GetValue(RunCommandParser.ConfigurationOption),
                 framework: parseResult.GetValue(RunCommandParser.FrameworkOption),

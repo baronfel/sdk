@@ -22,11 +22,6 @@ namespace Microsoft.DotNet.Cli
             Description = LocalizableStrings.CommandOptionProjectDescription
         };
 
-        public static readonly CliOption<IEnumerable<string>> PropertyOption = new ForwardedOption<IEnumerable<string>>("--property", "-p")
-        {
-            Description = LocalizableStrings.PropertyOptionDescription
-        }.SetForwardingFunction((values, parseResult) => parseResult.GetRunCommandPropertyValues().Select(value => $"-p:{value}"));
-
         public static readonly CliOption<string> LaunchProfileOption = new("--launch-profile", "-lp")
         {
             Description = LocalizableStrings.CommandOptionLaunchProfileDescription
@@ -71,7 +66,7 @@ namespace Microsoft.DotNet.Cli
             command.Options.Add(FrameworkOption);
             command.Options.Add(RuntimeOption.WithHelpDescription(command, LocalizableStrings.RuntimeOptionDescription));
             command.Options.Add(ProjectOption);
-            command.Options.Add(PropertyOption);
+            command.Options.Add(CommonOptions.PropertiesOption);
             command.Options.Add(LaunchProfileOption);
             command.Options.Add(NoLaunchProfileOption);
             command.Options.Add(NoBuildOption);
