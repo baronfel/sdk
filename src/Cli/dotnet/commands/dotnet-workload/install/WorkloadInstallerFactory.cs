@@ -40,10 +40,10 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
                     nugetPackageDownloader, verbosity, packageSourceLocation, reporter, tempDirPath, shouldLog: shouldLog);
             }
 
-            if (elevationRequired && !WorkloadFileBasedInstall.IsUserLocal(dotnetDir, sdkFeatureBand.ToString()) && !CanWriteToDotnetRoot(dotnetDir))
-            {
-                throw new GracefulException(LocalizableStrings.InadequatePermissions, isUserError: false);
-            }
+            // if (elevationRequired && !WorkloadFileBasedInstall.IsUserLocal(dotnetDir, sdkFeatureBand.ToString()) && !CanWriteToDotnetRoot(dotnetDir))
+            // {
+            //     throw new GracefulException(LocalizableStrings.InadequatePermissions, isUserError: false);
+            // }
 
             userProfileDir ??= CliFolderPathCalculator.DotnetUserProfileFolderPath;
 

@@ -95,7 +95,9 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
                 var tempDirsToDelete = new List<string>();
                 var tempFilesToDelete = new List<string>();
                 bool shouldRollBackPack = false;
-
+                using var _ = Tracing.Source.StartActivity("InstallFileBasedWorkload");
+                _?.AddTag("PackageVersion", packInfo.ResolvedPackageId);
+                _?.AddTag("PackageId", packInfo.Version);
                 transactionContext.Run(
                     action: () =>
                     {
@@ -126,6 +128,7 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
                                 Directory.CreateDirectory(Path.GetDirectoryName(packInfo.Path));
                             }
 
+                            using var _ = Tracing.Source.StartActivity("ExtractPackage");
                             if (IsSingleFilePack(packInfo))
                             {
                                 File.Copy(packagePath, packInfo.Path);
@@ -455,7 +458,7 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
         public void RemoveManifestsFromInstallState(SdkFeatureBand sdkFeatureBand)
         {
             string path = Path.Combine(WorkloadInstallType.GetInstallStateFolder(_sdkFeatureBand, _dotnetDir), "default.json");
-            
+
             if (File.Exists(path))
             {
                 var installStateContents = File.Exists(path) ? InstallStateContents.FromString(File.ReadAllText(path)) : new InstallStateContents();
@@ -503,7 +506,7 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
         public void Shutdown()
         {
             // Perform any additional cleanup here that's intended to run at the end of the command, regardless
-            // of success or failure. For file based installs, there shouldn't be any additional work to 
+            // of success or failure. For file based installs, there shouldn't be any additional work to
             // perform.
         }
 
@@ -514,6 +517,7 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
 
         public async Task ExtractManifestAsync(string nupkgPath, string targetPath)
         {
+            using var _ = Tracing.Source.StartActivity("ExtractManifestAsync");
             var extractionPath = Path.Combine(_tempPackagesDir.Value, "dotnet-sdk-advertising-temp", $"{Path.GetFileName(nupkgPath)}-extracted");
             if (Directory.Exists(extractionPath))
             {

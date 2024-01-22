@@ -101,11 +101,12 @@ namespace Microsoft.DotNet.Workloads.Workload
             List<WorkloadDownload> ret = new();
 
             DirectoryPath? tempPath = null;
-
+            using var downloadAllWorkloadsActivity = Tracing.Source.StartActivity("DownloadAllWorkloads");
             try
             {
                 if (!skipManifestUpdate)
                 {
+                    using var manifestUpdateActivity = Tracing.Source.StartActivity("UpdateManifests");
                     DirectoryPath folderForManifestDownloads;
                     tempPath = new DirectoryPath(Path.Combine(TempDirectoryPath, "dotnet-manifest-extraction"));
                     string extractedManifestsPath = Path.Combine(tempPath.Value.Value, "manifests");
@@ -119,7 +120,9 @@ namespace Microsoft.DotNet.Workloads.Workload
                         folderForManifestDownloads = tempPath.Value;
                     }
 
+                    var getPackageIdsActivity = Tracing.Source.StartActivity("GetWorkloadDownloadPackageIds");
                     var manifestDownloads = await _workloadManifestUpdater.GetManifestPackageDownloadsAsync(includePreview, new SdkFeatureBand(_targetSdkVersion), _sdkFeatureBand);
+                    getPackageIdsActivity.Dispose();
 
                     if (!manifestDownloads.Any())
                     {
@@ -130,8 +133,7 @@ namespace Microsoft.DotNet.Workloads.Workload
                     {
                         //  Add package to the list of downloads
                         ret.Add(download);
-
-                        //  Download package                        
+                        //  Download package
                         var downloadedPackagePath = await PackageDownloader.DownloadPackageAsync(new PackageId(download.NuGetPackageId), new NuGetVersion(download.NuGetPackageVersion),
                             _packageSourceLocation, downloadFolder: folderForManifestDownloads);
 
@@ -146,6 +148,7 @@ namespace Microsoft.DotNet.Workloads.Workload
                     _workloadInstaller.ReplaceWorkloadResolver(newResolver);
                 }
 
+                using var downloadPacksActivity = Tracing.Source.StartActivity("DownloadPacks");
                 var packDownloads = _workloadInstaller.GetDownloads(workloadIds, _sdkFeatureBand, false);
                 ret.AddRange(packDownloads);
 
@@ -174,6 +177,8 @@ namespace Microsoft.DotNet.Workloads.Workload
 
         protected IEnumerable<WorkloadId> GetInstalledWorkloads(bool fromPreviousSdk)
         {
+            using var _ = Tracing.Source.StartActivity(nameof(GetInstalledWorkloads));
+            _?.AddTag(nameof(fromPreviousSdk), fromPreviousSdk);
             if (fromPreviousSdk)
             {
                 var priorFeatureBands = _workloadInstaller.GetWorkloadInstallationRecordRepository().GetFeatureBandsWithInstallationRecords()

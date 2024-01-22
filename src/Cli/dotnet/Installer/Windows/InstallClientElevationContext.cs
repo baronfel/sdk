@@ -43,6 +43,12 @@ namespace Microsoft.DotNet.Installer.Windows
                     WindowStyle = ProcessWindowStyle.Hidden,
                 };
 
+                if (System.Diagnostics.Activity.Current is not null)
+                {
+                    startInfo.Environment["OTEL_TRACE_ID"] = System.Diagnostics.Activity.Current.TraceId.ToHexString();
+                    startInfo.Environment["OTEL_SPAN_ID"] = System.Diagnostics.Activity.Current.SpanId.ToHexString();
+                }
+
                 _log?.LogMessage($"Attempting to start the elevated command instance. {startInfo.FileName} {startInfo.Arguments}.");
 
                 _serverProcess = new Process

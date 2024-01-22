@@ -15,6 +15,7 @@ using NuGet.Packaging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using Windows.Win32.Security.Cryptography;
 
 namespace Microsoft.DotNet.Cli.NuGetPackageDownloader
 {
@@ -86,6 +87,9 @@ namespace Microsoft.DotNet.Cli.NuGetPackageDownloader
             PackageSourceMapping packageSourceMapping = null)
         {
             CancellationToken cancellationToken = CancellationToken.None;
+            using var _ = Tracing.Source.StartActivity("DownloadNugetPackage");
+            _?.AddTag("PackageId", packageId);
+            _?.AddTag("PackageVersion", packageVersion);
 
             (var source, var resolvedPackageVersion) = await GetPackageSourceAndVersion(packageId, packageVersion,
                 packageSourceLocation, includePreview, includeUnlisted, packageSourceMapping).ConfigureAwait(false);
@@ -318,7 +322,7 @@ namespace Microsoft.DotNet.Cli.NuGetPackageDownloader
 
             packageSourceMapping = packageSourceMapping ?? PackageSourceMapping.GetPackageSourceMapping(settings);
 
-            // filter package patterns if enabled            
+            // filter package patterns if enabled
             if (_isNuGetTool && packageSourceMapping?.IsEnabled == true)
             {
                 IReadOnlyList<string> sources = packageSourceMapping.GetConfiguredPackageSources(packageId.ToString());

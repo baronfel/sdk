@@ -50,7 +50,9 @@ namespace Microsoft.DotNet.Cli.Utils
         private readonly Stopwatch _timer;
         private readonly Dictionary<string, double> _data;
         private readonly string _name;
-
+#if NET8_0_OR_GREATER
+        private readonly System.Diagnostics.Activity _activity;
+#endif
         public PerformanceMeasurement(Dictionary<string, double> data, string name)
         {
             // Measurement is a no-op if we don't have a dictionary to store the entry.
@@ -62,9 +64,19 @@ namespace Microsoft.DotNet.Cli.Utils
             _data = data;
             _name = name;
             _timer = Stopwatch.StartNew();
+#if NET8_0_OR_GREATER
+            _activity = Tracing.Source.StartActivity(name);
+#endif
+
         }
 
-        public void Dispose() => _data?.Add(_name, _timer.Elapsed.TotalMilliseconds);
+        public void Dispose()
+        {
+            _data?.Add(_name, _timer.Elapsed.TotalMilliseconds);
+#if NET8_0_OR_GREATER
+            _activity.Dispose();
+#endif
+        }
     }
 
     public class BlockFilter : ITelemetryFilter

@@ -12,6 +12,11 @@ using NuGet.Frameworks;
 using CommandResult = System.CommandLine.Parsing.CommandResult;
 using System.CommandLine;
 using Microsoft.DotNet.Workloads.Workload;
+using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Context.Propagation;
 
 namespace Microsoft.DotNet.Cli
 {
@@ -21,6 +26,18 @@ namespace Microsoft.DotNet.Cli
 
         public static int Main(string[] args)
         {
+            using var tracerProvider =
+                Sdk.CreateTracerProviderBuilder()
+                    .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(Tracing.SourceName, serviceVersion: Product.Version))
+                    .AddSource(Tracing.SourceName)
+                    // .AddHttpClientInstrumentation()
+                    .AddOtlpExporter()
+                    .Build();
+            using var _commandActivity = Tracing.Source.StartActivity();
+            if (System.Environment.GetEnvironmentVariable("OTEL_TRACE_ID") is string traceParent && System.Environment.GetEnvironmentVariable("OTEL_SPAN_ID") is string spanId)
+            {
+                _commandActivity.SetParentId(ActivityTraceId.CreateFromString(traceParent), ActivitySpanId.CreateFromString(spanId));
+            }
             using AutomaticEncodingRestorer _ = new();
 
             // Setting output encoding is not available on those platforms
@@ -37,9 +54,11 @@ namespace Microsoft.DotNet.Cli
             DebugHelper.HandleDebugSwitch(ref args);
 
             // Capture the current timestamp to calculate the host overhead.
-            DateTime mainTimeStamp = DateTime.Now;
-            TimeSpan startupTime = mainTimeStamp - Process.GetCurrentProcess().StartTime;
 
+            DateTime mainTimeStamp = DateTime.Now;
+            var startTime = Process.GetCurrentProcess().StartTime;
+            TimeSpan startupTime = mainTimeStamp - startTime;
+            Tracing.Source.CreateActivity("Host Overhead", ActivityKind.Internal).SetStartTime(startTime).SetEndTime(mainTimeStamp).Start().Dispose();
             bool perfLogEnabled = Env.GetEnvironmentVariableAsBool("DOTNET_CLI_PERF_LOG", false);
 
             // Avoid create temp directory with root permission and later prevent access in non sudo
@@ -128,6 +147,8 @@ namespace Microsoft.DotNet.Cli
                 // https://github.com/dotnet/sdk/issues/20195
                 SudoEnvironmentDirectoryOverride.OverrideEnvironmentVariableToTmp(parseResult);
             }
+
+            Activity.Current.DisplayName = parseResult.CommandResult.Command.Name;
             PerformanceLogEventSource.Log.BuiltInCommandParserStop();
 
             using (IFirstTimeUseNoticeSentinel disposableFirstTimeUseNoticeSentinel =
@@ -225,6 +246,7 @@ namespace Microsoft.DotNet.Cli
             int exitCode;
             if (parseResult.CanBeInvoked())
             {
+                using var commandActivity = Tracing.Source.StartActivity(parseResult.CommandResult.Command.Name);
                 PerformanceLogEventSource.Log.BuiltInCommandStart();
 
                 try
@@ -241,6 +263,7 @@ namespace Microsoft.DotNet.Cli
             }
             else
             {
+                using var toolActivity = Tracing.Source.StartActivity("Tool Invocation");
                 PerformanceLogEventSource.Log.ExtensibleCommandResolverStart();
                 try
                 {

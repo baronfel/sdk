@@ -456,16 +456,19 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
             foreach (var msiToInstall in msisToInstall)
             {
                 bool shouldRollBackPack = false;
-
+                using var _ = Tracing.Source.StartActivity("InstallWorkloadMsi");
+                _?.AddTag("PackageVersion", msiToInstall.NuGetPackageId);
+                _?.AddTag("PackageId", msiToInstall.NuGetPackageVersion);
                 transactionContext.Run(action: () =>
                 {
+                    using var _ = Tracing.Source.StartActivity("ExecuteMsiInstall");
                     try
                     {
                         // Retrieve the payload from the MSI package cache.
                         MsiPayload msi = GetCachedMsiPayload(msiToInstall.NuGetPackageId, msiToInstall.NuGetPackageVersion, offlineCache);
                         VerifyPackage(msi);
                         DetectState state = DetectPackage(msi, out Version installedVersion);
-                        InstallAction plannedAction = PlanPackage(msi, state, InstallAction.Install, installedVersion, out _);
+                        InstallAction plannedAction = PlanPackage(msi, state, InstallAction.Install, installedVersion, out var _codes);
                         if (plannedAction == InstallAction.Install)
                         {
                             shouldRollBackPack = true;
@@ -483,6 +486,7 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
                 },
                 rollback: () =>
                 {
+                    using var _ = Tracing.Source.StartActivity("RollbackMsiInstall");
                     if (shouldRollBackPack)
                     {
                         RollBackMsiInstall(msiToInstall);
@@ -924,7 +928,9 @@ namespace Microsoft.DotNet.Workloads.Workload.Install
             uint error = Error.SUCCESS;
             string logFile = GetMsiLogName(msi, action);
             string name = string.IsNullOrWhiteSpace(displayName) ? msi.Payload : displayName;
-
+            using var _ = Tracing.Source.StartActivity("ExecutePackage");
+            _?.AddTag("Name", name);
+            _?.AddTag("Action", action.ToString());
             switch (action)
             {
                 case InstallAction.MinorUpdate:
