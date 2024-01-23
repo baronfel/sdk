@@ -21,7 +21,7 @@ using static System.Formats.Asn1.AsnWriter;
 namespace Microsoft.DotNet.Tools.Tool.Install
 {
     internal delegate IShellShimRepository CreateShellShimRepository(string appHostSourceDirectory, DirectoryPath? nonGlobalLocation = null);
-    
+
     internal delegate (IToolPackageStore, IToolPackageStoreQuery, IToolPackageDownloader) CreateToolPackageStoresAndDownloader(
         DirectoryPath? nonGlobalLocation = null,
         IEnumerable<string> forwardRestoreArguments = null);
@@ -119,6 +119,9 @@ namespace Microsoft.DotNet.Tools.Tool.Install
                 {
                     RunWithHandlingUninstallError(() =>
                     {
+                        using var _ = Tracing.Source.StartActivity("Uninstall Old Tool");
+                        _?.AddTag("tool.id", oldPackageNullable.Id);
+                        _?.AddTag("tool.version", oldPackageNullable.Version.ToNormalizedString());
                         foreach (RestoredCommand command in oldPackageNullable.Commands)
                         {
                             shellShimRepository.RemoveShim(command.Name);
@@ -130,6 +133,7 @@ namespace Microsoft.DotNet.Tools.Tool.Install
 
                 RunWithHandlingInstallError(() =>
                 {
+                    using var installActivity = Tracing.Source.StartActivity("Install New Tool");
                     IToolPackage newInstalledPackage = toolPackageDownloader.InstallPackage(
                     new PackageLocation(nugetConfig: GetConfigFile(), additionalFeeds: _source),
                         packageId: _packageId,
@@ -154,6 +158,7 @@ namespace Microsoft.DotNet.Tools.Tool.Install
                             null :
                             NuGetFramework.Parse(_framework);
                     }
+                    using var _ = Tracing.Source.StartActivity("Create Shims");
                     string appHostSourceDirectory = _shellShimTemplateFinder.ResolveAppHostSourceDirectoryAsync(_architectureOption, framework, RuntimeInformation.ProcessArchitecture).Result;
 
                     foreach (RestoredCommand command in newInstalledPackage.Commands)
@@ -174,8 +179,8 @@ namespace Microsoft.DotNet.Tools.Tool.Install
                 });
 
                 scope.Complete();
-                
-            } 
+
+            }
             return 0;
         }
 
@@ -233,7 +238,7 @@ namespace Microsoft.DotNet.Tools.Tool.Install
         {
             try
             {
-                uninstallAction();           
+                uninstallAction();
             }
             catch (Exception ex)
                 when (ToolUninstallCommandLowLevelErrorConverter.ShouldConvertToUserFacingError(ex))

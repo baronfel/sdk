@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.Cli.ToolPackage
     {
         private readonly IToolPackageStore _toolPackageStore;
 
-        // The directory that the tool package is returned 
+        // The directory that the tool package is returned
         protected DirectoryPath _toolReturnPackageDirectory;
 
         // The directory that the tool asset file is returned
@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.Cli.ToolPackage
             _globalToolStageDir = _toolPackageStore.GetRandomStagingDirectory();
             ISettings settings = Settings.LoadDefaultSettings(Directory.GetCurrentDirectory());
             _localToolDownloadDir = new DirectoryPath(SettingsUtility.GetGlobalPackagesFolder(settings));
-            
+
             _localToolAssetDir = new DirectoryPath(PathUtilities.CreateTempSubdirectory());
             _runtimeJsonPath = runtimeJsonPathForTests ?? Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "RuntimeIdentifierGraph.json");
         }
@@ -75,6 +75,9 @@ namespace Microsoft.DotNet.Cli.ToolPackage
             bool isGlobalTool = false
             )
         {
+            using var _ = Tracing.Source.StartActivity("Install Package");
+            _?.AddTag("packageId", packageId.ToString());
+            _?.AddTag("versionRange", versionRange?.ToString());
             var packageRootDirectory = _toolPackageStore.GetRootPackageDirectory(packageId);
             string rollbackDirectory = null;
 
@@ -105,8 +108,8 @@ namespace Microsoft.DotNet.Cli.ToolPackage
                         givenSpecificVersion = true;
                     }
                     NuGetVersion packageVersion = nugetPackageDownloader.GetBestPackageVersionAsync(packageId, versionRange, packageSourceLocation).GetAwaiter().GetResult();
-
-                    rollbackDirectory = isGlobalTool ? toolDownloadDir.Value: Path.Combine(toolDownloadDir.Value, packageId.ToString(), packageVersion.ToString());
+                    _?.AddTag("packageVersion", packageVersion?.ToNormalizedString());
+                    rollbackDirectory = isGlobalTool ? toolDownloadDir.Value : Path.Combine(toolDownloadDir.Value, packageId.ToString(), packageVersion.ToString());
 
                     if (isGlobalTool)
                     {
@@ -129,7 +132,7 @@ namespace Microsoft.DotNet.Cli.ToolPackage
                     {
                         DownloadAndExtractPackage(packageLocation, packageId, nugetPackageDownloader, toolDownloadDir.Value, _toolPackageStore, packageVersion, packageSourceLocation, includeUnlisted: givenSpecificVersion).GetAwaiter().GetResult();
                     }
-                    else if(isGlobalTool)
+                    else if (isGlobalTool)
                     {
                         throw new ToolPackageException(
                             string.Format(
@@ -137,7 +140,7 @@ namespace Microsoft.DotNet.Cli.ToolPackage
                                 packageId,
                                 packageVersion.ToNormalizedString()));
                     }
-                                       
+
                     CreateAssetFile(packageId, packageVersion, toolDownloadDir, assetFileDirectory, _runtimeJsonPath, targetFramework);
 
                     DirectoryPath toolReturnPackageDirectory;
@@ -310,9 +313,9 @@ namespace Microsoft.DotNet.Cli.ToolPackage
             var managedCriteria = new List<SelectionCriteria>(1);
             // Use major.minor version of currently running version of .NET
             NuGetFramework currentTargetFramework;
-            if(targetFramework != null)
+            if (targetFramework != null)
             {
-                currentTargetFramework = NuGetFramework.Parse(targetFramework); 
+                currentTargetFramework = NuGetFramework.Parse(targetFramework);
             }
             else
             {
