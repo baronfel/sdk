@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.Cli
                 Description = description,
                 HelpName = CommonLocalizableStrings.FrameworkArgumentName
 
-            }.ForwardAsSingle(o => $"-property:TargetFramework={o}")
+            }.ForwardAsMany(o => [$"-property:TargetFramework={o}", "-restoreProperty:TargetFramework="])
             .AddCompletions(Complete.TargetFrameworksFromProjectFile);
 
         public static CliOption<string> ArtifactsPathOption =
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.Cli
             {
                 Description = CommonLocalizableStrings.ArtifactsPathOptionDescription,
                 HelpName = CommonLocalizableStrings.ArtifactsPathArgumentName
-            }.ForwardAsSingle(o => $"-property:ArtifactsPath={CommandDirectoryContext.GetFullPath(o)}");            
+            }.ForwardAsSingle(o => $"-property:ArtifactsPath={CommandDirectoryContext.GetFullPath(o)}");
 
         private static string RuntimeArgName = CommonLocalizableStrings.RuntimeIdentifierArgumentName;
         public static IEnumerable<string> RuntimeArgFunc(string rid)
@@ -107,10 +107,10 @@ namespace Microsoft.DotNet.Cli
             return arg;
         }
 
-        public static CliOption<bool> NoRestoreOption =new("--no-restore")
-            {
-                Description = CommonLocalizableStrings.NoRestoreDescription
-            };
+        public static CliOption<bool> NoRestoreOption = new("--no-restore")
+        {
+            Description = CommonLocalizableStrings.NoRestoreDescription
+        };
 
         public static CliOption<bool> InteractiveMsBuildForwardOption =
             new ForwardedOption<bool>("--interactive")

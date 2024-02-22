@@ -47,8 +47,6 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
                 var msbuildPath = "<msbuildpath>";
                 var command = BuildCommand.FromArgs(args, msbuildPath);
 
-                command.SeparateRestoreCommand.Should().BeNull();
-
                 command.GetArgumentsToMSBuild()
                     .Should()
                     .Be($"{ExpectedPrefix} -restore -consoleloggerparameters:Summary{expectedAdditionalArgs}");
@@ -78,10 +76,6 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
 
                 var msbuildPath = "<msbuildpath>";
                 var command = BuildCommand.FromArgs(args, msbuildPath);
-
-                command.SeparateRestoreCommand.GetArgumentsToMSBuild()
-                    .Should()
-                    .Be($"{ExpectedPrefix} {expectedAdditionalArgsForRestore}");
 
                 command.GetArgumentsToMSBuild()
                     .Should()

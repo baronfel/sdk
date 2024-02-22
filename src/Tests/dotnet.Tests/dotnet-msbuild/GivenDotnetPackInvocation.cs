@@ -45,7 +45,6 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
                 var command = PackCommand.FromArgs(args, msbuildPath);
                 var expectedPrefix = args.FirstOrDefault() == "--no-build" ? ExpectedNoBuildPrefix : ExpectedPrefix;
 
-                command.SeparateRestoreCommand.Should().BeNull();
                 command.GetArgumentsToMSBuild().Should().Be($"{expectedPrefix} {ExpectedProperties}{expectedAdditionalArgs}");
             });
         }

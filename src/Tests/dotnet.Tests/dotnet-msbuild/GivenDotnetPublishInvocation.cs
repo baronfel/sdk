@@ -50,10 +50,6 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
                 var msbuildPath = "<msbuildpath>";
                 var command = PublishCommand.FromArgs(args, msbuildPath);
 
-                command.SeparateRestoreCommand
-                    .Should()
-                    .BeNull();
-
                 command.GetArgumentsToMSBuild()
                     .Should()
                     .Be($"{ExpectedPrefix} -restore -target:Publish {ExpectedProperties}{expectedAdditionalArgs}");
@@ -61,8 +57,8 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
         }
 
         [Theory]
-        [InlineData(new string[] { "-f", "<tfm>" }, "-property:TargetFramework=<tfm>")]
-        [InlineData(new string[] { "--framework", "<tfm>" }, "-property:TargetFramework=<tfm>")]
+        [InlineData(new string[] { "-f", "<tfm>" }, "-property:TargetFramework=<tfm> -restoreProperty:TargetFramework=")]
+        [InlineData(new string[] { "--framework", "<tfm>" }, "-property:TargetFramework=<tfm> -restoreProperty:TargetFramework=")]
         public void MsbuildInvocationIsCorrectForSeparateRestore(string[] args, string expectedAdditionalArgs)
         {
             expectedAdditionalArgs = (string.IsNullOrEmpty(expectedAdditionalArgs) ? "" : $" {expectedAdditionalArgs}");
@@ -70,14 +66,9 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
             var msbuildPath = "<msbuildpath>";
             var command = PublishCommand.FromArgs(args, msbuildPath);
 
-            command.SeparateRestoreCommand
-                   .GetArgumentsToMSBuild()
-                   .Should()
-                   .Be($"{ExpectedPrefix} -target:Restore {ExpectedProperties}");
-
             command.GetArgumentsToMSBuild()
                    .Should()
-                   .Be($"{ExpectedPrefix} -nologo -target:Publish {ExpectedProperties}{expectedAdditionalArgs}");
+                   .Be($"{ExpectedPrefix} -restore -target:Publish {ExpectedProperties}{expectedAdditionalArgs}");
         }
 
         [Fact]
@@ -85,10 +76,6 @@ namespace Microsoft.DotNet.Cli.MSBuild.Tests
         {
             var msbuildPath = "<msbuildpath>";
             var command = PublishCommand.FromArgs(new[] { "--no-build" }, msbuildPath);
-
-            command.SeparateRestoreCommand
-                   .Should()
-                   .BeNull();
 
             // NOTE --no-build implies no-restore hence no -restore argument to msbuild below.
             command.GetArgumentsToMSBuild()
