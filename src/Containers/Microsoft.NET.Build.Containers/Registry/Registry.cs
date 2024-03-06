@@ -151,7 +151,7 @@ internal sealed class Registry
         cancellationToken.ThrowIfCancellationRequested();
         using HttpResponseMessage initialManifestResponse = await _registryAPI.Manifest.GetAsync(repositoryName, reference, cancellationToken).ConfigureAwait(false);
 
-        return initialManifestResponse.Content.Headers.ContentType?.MediaType switch
+        (ManifestV2 manifest, ImageConfig config) = initialManifestResponse.Content.Headers.ContentType?.MediaType switch
         {
             SchemaTypes.DockerManifestV2 or SchemaTypes.OciManifestV1 => await ReadSingleImageAsync(
                 repositoryName,
@@ -182,6 +182,8 @@ internal sealed class Registry
             }
             return manifest;
         }
+
+        return new ImageBuilder(manifest, config, _logger);
     }
 
     internal async Task<ManifestListV2?> GetManifestListAsync(string repositoryName, string reference, CancellationToken cancellationToken)
@@ -196,7 +198,7 @@ internal sealed class Registry
         };
     }
 
-    private async Task<ImageBuilder> ReadSingleImageAsync(string repositoryName, ManifestV2 manifest, CancellationToken cancellationToken)
+    private async Task<(ManifestV2 manifest, ImageConfig config)> ReadSingleImageAsync(string repositoryName, ManifestV2 manifest, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ManifestConfig config = manifest.Config;
@@ -205,7 +207,7 @@ internal sealed class Registry
         JsonNode configDoc = await _registryAPI.Blob.GetJsonAsync(repositoryName, configSha, cancellationToken).ConfigureAwait(false);
 
         cancellationToken.ThrowIfCancellationRequested();
-        return new ImageBuilder(manifest, new ImageConfig(configDoc), _logger);
+        return new(manifest, new ImageConfig(configDoc));
     }
 
 
@@ -255,7 +257,7 @@ internal sealed class Registry
     }
 
 
-    private async Task<ImageBuilder> PickBestImageFromManifestListAsync(
+    private async Task<(ManifestV2 manifest, ImageConfig config)> PickBestImageFromManifestListAsync(
         string repositoryName,
         string reference,
         ManifestListV2 manifestList,

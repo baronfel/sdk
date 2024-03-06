@@ -33,6 +33,12 @@ internal static class ContentStore
         }
     }
 
+    /// <summary>
+    /// Calculates the path for a descriptor in the blob content store
+    /// </summary>
+    /// <param name="descriptor"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
     public static string PathForDescriptor(Descriptor descriptor)
     {
         string digest = descriptor.Digest;
@@ -56,11 +62,19 @@ internal static class ContentStore
         return GetPathForHash(contentHash) + extension;
     }
 
+    /// <summary>
+    /// Provides a stable name for a named repository reference, i.e. not the resolved digest
+    /// </summary>
+    /// <param name="repositoryName"></param>
+    /// <param name="referenceName"></param>
+    /// <returns></returns>
+    public static string PathForRepositoryReference(string registryName, string repositoryName, string referenceName) => Path.Combine(ContentRoot, "References", registryName, repositoryName, referenceName);
 
     public static string GetPathForHash(string contentHash)
     {
         return Path.Combine(ContentRoot, contentHash);
     }
+
 
     public static string GetTempFile()
     {

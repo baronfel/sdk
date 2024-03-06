@@ -28,7 +28,7 @@ internal class DefaultManifestOperations : IManifestOperations
     {
         cancellationToken.ThrowIfCancellationRequested();
         using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, new Uri(_baseUri, $"/v2/{repositoryName}/manifests/{reference}")).AcceptManifestFormats();
-        HttpResponseMessage response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         return response.StatusCode switch
         {
             HttpStatusCode.OK => response,
