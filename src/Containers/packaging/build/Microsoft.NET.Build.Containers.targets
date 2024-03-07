@@ -54,6 +54,15 @@
       ContainerFamily="$(ContainerFamily)">
         <Output TaskParameter="ComputedContainerBaseImage" PropertyName="ContainerBaseImage" />
     </ComputeDotnetBaseImageAndTag>
+
+    <ResolveBaseImage
+      BaseImageReference="$(ContainerBaseImage)"
+      RuntimeIdentifier="$(ContainerRuntimeIdentifier)"
+      RuntimeIdentifierGraphPath="$(RuntimeIdentifierGraphPath)">
+      <Output TaskParameter="BaseContainerManifest" ItemName="_BaseContainerManifest" />
+      <Output TaskParameter="BaseContainerConfig" ItemName="_BaseContainerConfig" />
+      <Output TaskParameter="BaseImageLayers" ItemName="_BaseImageLayer" />
+    </ResolveBaseImage>
   </Target>
 
   <Target Name="ComputeContainerConfig" DependsOnTargets="ComputeContainerBaseImage">
@@ -185,7 +194,9 @@
     <PublishContainerDependsOn>
       _ContainerVerifySDKVersion;
       ComputeContainerConfig;
-      _CheckContainersPackage
+      _CheckContainersPackage;
+      _DownloadLayers;
+      _CreateAppLayer;
     </PublishContainerDependsOn>
   </PropertyGroup>
 
@@ -200,6 +211,34 @@
     <PropertyGroup>
       <EnableSdkContainerSupport Condition="'@(ContainersPackage)' != ''">true</EnableSdkContainerSupport>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="_DownloadLayers" Inputs="@(_BaseImageLayer)" Outputs="@(_BaseImageLayer)">
+    <Message Importance="High" Text="Downloading base image layer %(_BaseImageLayer.Identity)" Condition="!(Exists(%(_BaseImageLayer.Identity)))" />
+    <ItemGroup>
+      <_ContainerLayer Include="@(_BaseImageLayer)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_FindPublishItems">
+    <ItemGroup>
+      <_PublishItem Include="$(PublishDir)/**/*.*" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_CreateAppLayer" DependsOnTargets="_FindPublishItems" Inputs="@(_PublishItem);$(PublishIntermediateTempPath)/app.layer" Outputs="$(PublishIntermediateTempPath)/app.layer">
+    <CreateAppLayer
+      FileRoot="$(PublishDir)"
+      Files="@(_PublishItem)"
+      WorkingDirectory="$(ContainerWorkingDirectory)"
+      IsWindows="$(ContainerRuntimeIdentifier.StartsWith('win'))"
+      Manifest="@(_BaseContainerManifest)"
+      OutputLocation="$(PublishIntermediateTempPath)/app.layer">
+      <Output TaskParameter="OutputLayer" ItemName="_AppContainerLayer" />
+    </CreateAppLayer>
+    <ItemGroup>
+      <_ContainerLayer Include="@(_AppContainerLayer)" />
+    </ItemGroup>
   </Target>
 
   <Target Name="PublishContainer"
@@ -218,13 +257,15 @@
                     BaseRegistry="$(ContainerBaseRegistry)"
                     BaseImageName="$(ContainerBaseName)"
                     BaseImageTag="$(ContainerBaseTag)"
+                    BaseImageManifest="@(_BaseContainerManifest)"
+                    BaseImageConfig="@(_BaseContainerConfig)"
+                    AppLayer="@(_AppContainerLayer)"
                     LocalRegistry="$(LocalRegistry)"
                     OutputRegistry="$(ContainerRegistry)"
+                    WorkingDirectory="$(ContainerWorkingDirectory)"
                     ArchiveOutputPath="$(ContainerArchiveOutputPath)"
                     Repository="$(ContainerRepository)"
                     ImageTags="@(ContainerImageTags)"
-                    PublishDirectory="$(PublishDir)"
-                    WorkingDirectory="$(ContainerWorkingDirectory)"
                     Entrypoint="@(ContainerEntrypoint)"
                     EntrypointArgs="@(ContainerEntrypointArgs)"
                     AppCommand="@(ContainerAppCommand)"
@@ -234,9 +275,7 @@
                     Labels="@(ContainerLabel)"
                     ExposedPorts="@(ContainerPort)"
                     ContainerEnvironmentVariables="@(ContainerEnvironmentVariables)"
-                    ContainerRuntimeIdentifier="$(ContainerRuntimeIdentifier)"
                     ContainerUser="$(ContainerUser)"
-                    RuntimeIdentifierGraphPath="$(RuntimeIdentifierGraphPath)"
                     GenerateLabels="$(ContainerGenerateLabels)"
                     GenerateDigestLabel="$(ContainerGenerateLabelsImageBaseDigest)"> <!-- The RID graph path is provided as a property by the SDK. -->
 

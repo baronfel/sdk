@@ -27,8 +27,6 @@ public class CreateNewImageToolTaskTests
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
 
-        task.PublishDirectory = publishDir.FullName;
-
         e = Assert.Throws<InvalidOperationException>(() => task.GenerateCommandLineCommandsInt());
         Assert.Equal("CONTAINER4001: Required property 'BaseRegistry' was not set or empty.", e.Message);
 
@@ -69,7 +67,6 @@ public class CreateNewImageToolTaskTests
     {
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -100,7 +97,6 @@ public class CreateNewImageToolTaskTests
     {
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -130,14 +126,12 @@ public class CreateNewImageToolTaskTests
     {
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
         task.WorkingDirectory = "MyWorkingDirectory";
         task.Entrypoint = new[] { new TaskItem("MyEntryPoint") };
 
-        task.ContainerRuntimeIdentifier = value;
 
         string args = task.GenerateCommandLineCommandsInt();
         if (optionExpected)
@@ -159,14 +153,12 @@ public class CreateNewImageToolTaskTests
     {
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
         task.WorkingDirectory = "MyWorkingDirectory";
         task.Entrypoint = new[] { new TaskItem("MyEntryPoint") };
 
-        task.RuntimeIdentifierGraphPath = value;
 
         string args = task.GenerateCommandLineCommandsInt();
 
@@ -192,7 +184,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -238,7 +229,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -289,7 +279,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -379,7 +368,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -398,7 +386,6 @@ public class CreateNewImageToolTaskTests
     {
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -430,7 +417,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -467,7 +453,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -506,7 +491,6 @@ public class CreateNewImageToolTaskTests
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
 
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -532,7 +516,6 @@ public class CreateNewImageToolTaskTests
         CreateNewImage task = new();
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
 
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";
@@ -562,7 +545,6 @@ public class CreateNewImageToolTaskTests
         task.BuildEngine = buildEngine;
 
         DirectoryInfo publishDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), DateTime.Now.ToString("yyyyMMddHHmmssfff")));
-        task.PublishDirectory = publishDir.FullName;
         task.BaseRegistry = "MyBaseRegistry";
         task.BaseImageName = "MyBaseImageName";
         task.Repository = "MyImageName";

@@ -17,4 +17,6 @@
     <UsingTask TaskName="$(MSBuildThisFileName).Tasks.CreateNewImage" AssemblyFile="$(ContainerCustomTasksAssembly)"/>
     <UsingTask TaskName="$(MSBuildThisFileName).Tasks.ParseContainerProperties" AssemblyFile="$(ContainerCustomTasksAssembly)"/>
     <UsingTask TaskName="$(MSBuildThisFileName).Tasks.ComputeDotnetBaseImageAndTag" AssemblyFile="$(ContainerCustomTasksAssembly)"/>
+    <UsingTask TaskName="$(MSBuildThisFileName).Tasks.ResolveBaseImage" AssemblyFile="$(ContainerCustomTasksAssembly)"/>
+    <UsingTask TaskName="$(MSBuildThisFileName).Tasks.CreateAppLayer" AssemblyFile="$(ContainerCustomTasksAssembly)"/>
 </Project>

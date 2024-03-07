@@ -71,10 +71,6 @@ public partial class CreateNewImage : ToolTask, ICancelableTask
     /// </remarks>
     internal string GenerateCommandLineCommandsInt()
     {
-        if (string.IsNullOrWhiteSpace(PublishDirectory))
-        {
-            throw new InvalidOperationException(Resource.FormatString(nameof(Strings.RequiredPropertyNotSetOrEmpty), nameof(PublishDirectory)));
-        }
         if (string.IsNullOrWhiteSpace(BaseRegistry))
         {
             throw new InvalidOperationException(Resource.FormatString(nameof(Strings.RequiredPropertyNotSetOrEmpty), nameof(BaseRegistry)));
@@ -96,7 +92,7 @@ public partial class CreateNewImage : ToolTask, ICancelableTask
 
         //mandatory options
         builder.AppendFileNameIfNotNull(Path.Combine(ContainerizeDirectory, "containerize.dll"));
-        builder.AppendFileNameIfNotNull(PublishDirectory.TrimEnd(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }));
+        // builder.AppendFileNameIfNotNull(PublishDirectory.TrimEnd(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }));
         builder.AppendSwitchIfNotNull("--baseregistry ", BaseRegistry);
         builder.AppendSwitchIfNotNull("--baseimagename ", BaseImageName);
         builder.AppendSwitchIfNotNull("--repository ", Repository);
@@ -172,15 +168,15 @@ public partial class CreateNewImage : ToolTask, ICancelableTask
         string[] readyEnvVariables = sanitizedEnvVariables.Select(i => i.ItemSpec + "=" + i.GetMetadata("Value")).ToArray();
         builder.AppendSwitchIfNotNull("--environmentvariables ", readyEnvVariables, delimiter: " ");
 
-        if (!string.IsNullOrWhiteSpace(ContainerRuntimeIdentifier))
-        {
-            builder.AppendSwitchIfNotNull("--rid ", ContainerRuntimeIdentifier);
-        }
+        // if (!string.IsNullOrWhiteSpace(ContainerRuntimeIdentifier))
+        // {
+        //     builder.AppendSwitchIfNotNull("--rid ", ContainerRuntimeIdentifier);
+        // }
 
-        if (!string.IsNullOrWhiteSpace(RuntimeIdentifierGraphPath))
-        {
-            builder.AppendSwitchIfNotNull("--ridgraphpath ", RuntimeIdentifierGraphPath);
-        }
+        // if (!string.IsNullOrWhiteSpace(RuntimeIdentifierGraphPath))
+        // {
+        //     builder.AppendSwitchIfNotNull("--ridgraphpath ", RuntimeIdentifierGraphPath);
+        // }
 
         if (!string.IsNullOrWhiteSpace(ContainerUser))
         {

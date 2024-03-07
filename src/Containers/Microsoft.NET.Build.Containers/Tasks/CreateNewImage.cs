@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.Logging;
 using Microsoft.NET.Build.Containers.LocalDaemons;
@@ -54,12 +55,6 @@ public sealed partial class CreateNewImage : Microsoft.Build.Utilities.Task, ICa
         ILoggerFactory msbuildLoggerFactory = new LoggerFactory(new[] { loggerProvider });
         ILogger logger = msbuildLoggerFactory.CreateLogger<CreateNewImage>();
 
-        if (!Directory.Exists(PublishDirectory))
-        {
-            Log.LogErrorWithCodeFromResources(nameof(Strings.PublishDirectoryDoesntExist), nameof(PublishDirectory), PublishDirectory);
-            return !Log.HasLoggedErrors;
-        }
-
         Registry? sourceRegistry = IsLocalPull ? null : new Registry(BaseRegistry, logger);
         SourceImageReference sourceImageReference = new(sourceRegistry, BaseImageName, BaseImageTag);
 
@@ -71,49 +66,23 @@ public sealed partial class CreateNewImage : Microsoft.Build.Utilities.Task, ICa
             OutputRegistry,
             LocalRegistry);
 
-        ImageBuilder? imageBuilder;
+        ImageBuilder imageBuilder;
         if (sourceRegistry is { } registry)
         {
-            try
-            {
-                var picker = new RidGraphManifestPicker(RuntimeIdentifierGraphPath);
-                imageBuilder = await registry.GetImageManifestAsync(
-                    BaseImageName,
-                    BaseImageTag,
-                    ContainerRuntimeIdentifier,
-                    picker,
-                    cancellationToken).ConfigureAwait(false);
-            }
-            catch (RepositoryNotFoundException)
-            {
-                Log.LogErrorWithCodeFromResources(nameof(Strings.RepositoryNotFound), BaseImageName, BaseImageTag, registry.RegistryName);
-                return !Log.HasLoggedErrors;
-            }
-            catch (UnableToAccessRepositoryException)
-            {
-                Log.LogErrorWithCodeFromResources(nameof(Strings.UnableToAccessRepository), BaseImageName, registry.RegistryName);
-                return !Log.HasLoggedErrors;
-            }
-            catch (ContainerHttpException e)
-            {
-                Log.LogErrorFromException(e, showStackTrace: false, showDetail: true, file: null);
-                return !Log.HasLoggedErrors;
-            }
+            using var manifestFileStream = File.OpenRead(BaseImageManifest.ItemSpec);
+            ManifestV2 manifest = (await JsonSerializer.DeserializeAsync<ManifestV2>(manifestFileStream, cancellationToken: _cancellationTokenSource.Token))!;
+            using var configFileStream = File.OpenRead(BaseImageConfig.ItemSpec);
+            JsonNode configJson = (await JsonNode.ParseAsync(configFileStream, cancellationToken: _cancellationTokenSource.Token))!;
+            imageBuilder = new(manifest, new ImageConfig(configJson), logger);
         }
         else
         {
             throw new NotSupportedException(Resource.GetString(nameof(Strings.ImagePullNotSupported)));
         }
 
-        if (imageBuilder is null)
-        {
-            Log.LogErrorWithCodeFromResources(nameof(Strings.BaseImageNotFound), sourceImageReference, ContainerRuntimeIdentifier);
-            return !Log.HasLoggedErrors;
-        }
-
         SafeLog(Strings.ContainerBuilder_StartBuildingImage, Repository, String.Join(",", ImageTags), sourceImageReference);
-
-        Layer newLayer = Layer.FromDirectory(PublishDirectory, WorkingDirectory, imageBuilder.IsWindows, imageBuilder.ManifestMediaType);
+        var appLayerDescriptor = new Descriptor(AppLayer.GetMetadata("MediaType"), AppLayer.GetMetadata("Digest"), long.Parse(AppLayer.GetMetadata("Size")));
+        Layer newLayer = Layer.FromDescriptor(appLayerDescriptor);
         imageBuilder.AddLayer(newLayer);
         imageBuilder.SetWorkingDirectory(WorkingDirectory);
 
@@ -183,7 +152,7 @@ public sealed partial class CreateNewImage : Microsoft.Build.Utilities.Task, ICa
         CancellationToken cancellationToken)
     {
         ILocalRegistry localRegistry = destinationImageReference.LocalRegistry!;
-        if (!(await localRegistry.IsAvailableAsync(cancellationToken).ConfigureAwait(false)))
+        if (!await localRegistry.IsAvailableAsync(cancellationToken).ConfigureAwait(false))
         {
             Log.LogErrorWithCodeFromResources(nameof(Strings.LocalRegistryNotAvailable));
             return;

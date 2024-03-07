@@ -13,6 +13,38 @@ Microsoft.NET.Build.Containers.Tasks.ComputeDotnetBaseImageAndTag.TargetRuntimeI
 Microsoft.NET.Build.Containers.Tasks.ComputeDotnetBaseImageAndTag.TargetRuntimeIdentifier.set -> void
 Microsoft.NET.Build.Containers.Tasks.ComputeDotnetBaseImageAndTag.UsesInvariantGlobalization.get -> bool
 Microsoft.NET.Build.Containers.Tasks.ComputeDotnetBaseImageAndTag.UsesInvariantGlobalization.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.CreateAppLayer() -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.FileRoot.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.FileRoot.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.Files.get -> Microsoft.Build.Framework.ITaskItem![]!
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.Files.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.IsWindows.get -> bool
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.IsWindows.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.Manifest.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.Manifest.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.OutputLayer.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.OutputLayer.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.OutputLocation.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.OutputLocation.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.WorkingDirectory.get -> string!
+Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.WorkingDirectory.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.AppLayer.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.AppLayer.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageConfig.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageConfig.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageManifest.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageManifest.set -> void
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.BaseContainerConfig.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.BaseContainerManifest.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.BaseImageLayers.get -> Microsoft.Build.Framework.ITaskItem![]!
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.BaseImageReference.get -> string!
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.ResolveBaseImage() -> void
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.RuntimeIdentifier.get -> string!
+Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.RuntimeIdentifierGraphPath.get -> string!
+override Microsoft.NET.Build.Containers.Tasks.CreateAppLayer.Execute() -> bool
+override Microsoft.NET.Build.Containers.Tasks.ResolveBaseImage.Execute() -> bool
 static readonly Microsoft.NET.Build.Containers.Constants.Version -> string!
 Microsoft.NET.Build.Containers.ContainerHelpers
 Microsoft.NET.Build.Containers.ContainerHelpers.ParsePortError
@@ -142,8 +174,6 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerEnvironmentVariable
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerEnvironmentVariables.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerizeDirectory.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerizeDirectory.set -> void
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerRuntimeIdentifier.get -> string!
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerRuntimeIdentifier.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerUser.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerUser.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.CreateNewImage() -> void
@@ -182,10 +212,6 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.OutputRegistry.get -> string
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.OutputRegistry.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ArchiveOutputPath.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ArchiveOutputPath.set -> void
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.get -> string!
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.set -> void
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.get -> string!
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolExe.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolExe.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolPath.get -> string!

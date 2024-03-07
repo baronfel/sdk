@@ -64,12 +64,8 @@ partial class CreateNewImage
     [Required]
     public string[] ImageTags { get; set; }
 
-    /// <summary>
-    /// The directory for the build outputs to be published.
-    /// Constructed from "$(MSBuildProjectDirectory)\$(PublishDir)"
-    /// </summary>
     [Required]
-    public string PublishDirectory { get; set; }
+    public ITaskItem AppLayer { get; set; }
 
     /// <summary>
     /// The working directory of the container.
@@ -126,18 +122,6 @@ partial class CreateNewImage
     public ITaskItem[] ContainerEnvironmentVariables { get; set; }
 
     /// <summary>
-    /// The RID to use to determine the host manifest if the parent container is a manifest list
-    /// </summary>
-    [Required]
-    public string ContainerRuntimeIdentifier { get; set; }
-
-    /// <summary>
-    /// The path to the runtime identifier graph file. This is used to compute RID compatibility for Image Manifest List entries.
-    /// </summary>
-    [Required]
-    public string RuntimeIdentifierGraphPath { get; set; }
-
-    /// <summary>
     /// The username or UID which is a platform-specific structure that allows specific control over which user the process run as.
     /// This acts as a default value to use when the value is not specified when creating a container.
     /// For Linux based systems, all of the following are valid: user, uid, user:group, uid:gid, uid:group, user:gid.
@@ -161,6 +145,12 @@ partial class CreateNewImage
     [Required]
     public bool GenerateDigestLabel { get; set; }
 
+    [Required]
+    public ITaskItem BaseImageManifest { get; set; }
+
+    [Required]
+    public ITaskItem BaseImageConfig { get; set; }
+
     [Output]
     public string GeneratedContainerManifest { get; set; }
 
@@ -181,11 +171,13 @@ partial class CreateNewImage
         BaseRegistry = "";
         BaseImageName = "";
         BaseImageTag = "";
+        BaseImageManifest = null!;
+        BaseImageConfig = null!;
+        AppLayer = null!;
         OutputRegistry = "";
         ArchiveOutputPath = "";
         Repository = "";
         ImageTags = Array.Empty<string>();
-        PublishDirectory = "";
         WorkingDirectory = "";
         Entrypoint = Array.Empty<ITaskItem>();
         EntrypointArgs = Array.Empty<ITaskItem>();
@@ -196,8 +188,6 @@ partial class CreateNewImage
         Labels = Array.Empty<ITaskItem>();
         ExposedPorts = Array.Empty<ITaskItem>();
         ContainerEnvironmentVariables = Array.Empty<ITaskItem>();
-        ContainerRuntimeIdentifier = "";
-        RuntimeIdentifierGraphPath = "";
         LocalRegistry = "";
         ContainerUser = "";
 

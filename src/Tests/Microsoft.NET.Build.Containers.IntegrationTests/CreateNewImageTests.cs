@@ -53,19 +53,17 @@ public class CreateNewImageTests
 
         task.OutputRegistry = "localhost:5010";
         task.LocalRegistry = DockerAvailableFactAttribute.LocalRegistry;
-        task.PublishDirectory = Path.Combine(newProjectDir.FullName, "bin", "Release", ToolsetInfo.CurrentTargetFramework, "linux-arm64", "publish");
         task.Repository = "dotnet/create-new-image-baseline";
         task.ImageTags = new[] { "latest" };
         task.WorkingDirectory = "app/";
-        task.ContainerRuntimeIdentifier = "linux-arm64";
         task.Entrypoint = new TaskItem[] { new("dotnet"), new("build") };
-        task.RuntimeIdentifierGraphPath = ToolsetUtils.GetRuntimeGraphFilePath();
 
         Assert.True(task.Execute(), FormatBuildMessages(errors));
         newProjectDir.Delete(true);
     }
 
-    private static ImageConfig GetImageConfigFromTask(CreateNewImage task) {
+    private static ImageConfig GetImageConfigFromTask(CreateNewImage task)
+    {
         return new(task.GeneratedContainerConfiguration);
     }
 
@@ -118,12 +116,9 @@ public class CreateNewImageTests
         cni.BaseImageTag = pcp.ParsedContainerTag;
         cni.Repository = pcp.NewContainerRepository;
         cni.OutputRegistry = "localhost:5010";
-        cni.PublishDirectory = Path.Combine(newProjectDir.FullName, "bin", "release", ToolsetInfo.CurrentTargetFramework);
         cni.WorkingDirectory = "app/";
         cni.Entrypoint = new TaskItem[] { new(newProjectDir.Name) };
         cni.ImageTags = pcp.NewContainerTags;
-        cni.ContainerRuntimeIdentifier = "linux-x64";
-        cni.RuntimeIdentifierGraphPath = ToolsetUtils.GetRuntimeGraphFilePath();
 
         Assert.True(cni.Execute(), FormatBuildMessages(errors));
         newProjectDir.Delete(true);
@@ -190,13 +185,10 @@ public class CreateNewImageTests
         cni.BaseImageTag = pcp.ParsedContainerTag;
         cni.Repository = pcp.NewContainerRepository;
         cni.OutputRegistry = pcp.NewContainerRegistry;
-        cni.PublishDirectory = Path.Combine(newProjectDir.FullName, "bin", "release", ToolsetInfo.CurrentTargetFramework, "linux-x64");
         cni.WorkingDirectory = "/app";
         cni.Entrypoint = new TaskItem[] { new($"/app/{newProjectDir.Name}") };
         cni.ImageTags = pcp.NewContainerTags;
         cni.ContainerEnvironmentVariables = pcp.NewContainerEnvironmentVariables;
-        cni.ContainerRuntimeIdentifier = "linux-x64";
-        cni.RuntimeIdentifierGraphPath = ToolsetUtils.GetRuntimeGraphFilePath();
         cni.LocalRegistry = DockerAvailableFactAttribute.LocalRegistry;
 
         Assert.True(cni.Execute(), FormatBuildMessages(errors));
@@ -218,7 +210,7 @@ public class CreateNewImageTests
     [DockerAvailableFact]
     public async System.Threading.Tasks.Task CreateNewImage_RootlessBaseImage()
     {
-        const string RootlessBase ="dotnet/rootlessbase";
+        const string RootlessBase = "dotnet/rootlessbase";
         const string AppImage = "dotnet/testimagerootless";
         const string RootlessUser = "1654";
         var loggerFactory = new TestLoggerFactory(_testOutput);
@@ -273,13 +265,10 @@ public class CreateNewImageTests
         task.BaseImageTag = "latest";
 
         task.OutputRegistry = "localhost:5010";
-        task.PublishDirectory = Path.Combine(newProjectDir.FullName, "bin", "Release", ToolsetInfo.CurrentTargetFramework, "linux-x64", "publish");
         task.Repository = AppImage;
         task.ImageTags = new[] { "latest" };
         task.WorkingDirectory = "app/";
-        task.ContainerRuntimeIdentifier = "linux-x64";
         task.Entrypoint = new TaskItem[] { new("dotnet"), new("build") };
-        task.RuntimeIdentifierGraphPath = ToolsetUtils.GetRuntimeGraphFilePath();
 
         Assert.True(task.Execute());
         newProjectDir.Delete(true);
@@ -306,7 +295,7 @@ public class CreateNewImageTests
         return (buildEngine, errors);
     }
 
-    private static string GetTestDirectoryName([CallerMemberName]string testName = "DefaultTest") => Path.Combine(TestSettings.TestArtifactsDirectory, testName + "_" + DateTime.Now.ToString("yyyyMMddHHmmss"));
+    private static string GetTestDirectoryName([CallerMemberName] string testName = "DefaultTest") => Path.Combine(TestSettings.TestArtifactsDirectory, testName + "_" + DateTime.Now.ToString("yyyyMMddHHmmss"));
 
     private static string FormatBuildMessages(List<string?> messages) => string.Join("\r\n", messages);
 }

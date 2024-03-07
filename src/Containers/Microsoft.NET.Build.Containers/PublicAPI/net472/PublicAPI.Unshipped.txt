@@ -32,8 +32,6 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerEnvironmentVariable
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerEnvironmentVariables.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerizeDirectory.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerizeDirectory.set -> void
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerRuntimeIdentifier.get -> string!
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerRuntimeIdentifier.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerUser.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ContainerUser.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.CreateNewImage() -> void
@@ -71,16 +69,18 @@ Microsoft.NET.Build.Containers.Tasks.CreateNewImage.OutputRegistry.get -> string
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.OutputRegistry.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ArchiveOutputPath.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ArchiveOutputPath.set -> void
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.get -> string!
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.PublishDirectory.set -> void
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.get -> string!
-Microsoft.NET.Build.Containers.Tasks.CreateNewImage.RuntimeIdentifierGraphPath.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.WorkingDirectory.get -> string!
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.WorkingDirectory.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GenerateLabels.get -> bool
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GenerateLabels.set -> void
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GenerateDigestLabel.get -> bool
 Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GenerateDigestLabel.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.AppLayer.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.AppLayer.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageConfig.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageConfig.set -> void
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageManifest.get -> Microsoft.Build.Framework.ITaskItem!
+Microsoft.NET.Build.Containers.Tasks.CreateNewImage.BaseImageManifest.set -> void
 override Microsoft.NET.Build.Containers.Tasks.CreateNewImage.ToolName.get -> string!
 override Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GenerateCommandLineCommands() -> string!
 override Microsoft.NET.Build.Containers.Tasks.CreateNewImage.GenerateFullPathToTool() -> string!

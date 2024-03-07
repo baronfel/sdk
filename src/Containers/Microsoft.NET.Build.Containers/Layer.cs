@@ -49,6 +49,156 @@ internal class Layer
     {
         return new(ContentStore.PathForDescriptor(descriptor), descriptor);
     }
+    public static Layer FromFiles(string directory, IEnumerable<FileSystemInfo> files, string containerPath, bool isWindowsLayer, string manifestMediaType, CancellationToken cancellationToken)
+    {
+        long fileSize;
+        Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+        Span<byte> uncompressedHash = stackalloc byte[SHA256.HashSizeInBytes];
+
+        // Docker treats a COPY instruction that copies to a path like `/app` by
+        // including `app/` as a directory, with no leading slash. Emulate that here.
+        containerPath = containerPath.TrimStart(PathSeparators);
+
+        // For Windows layers we need to put files into a "Files" directory without drive letter.
+        if (isWindowsLayer)
+        {
+            // Cut of drive letter:  /* C:\ */
+            if (containerPath[1] == ':')
+            {
+                containerPath = containerPath[3..];
+            }
+
+            containerPath = "Files/" + containerPath;
+        }
+
+        // Trim training path separator (if present).
+        containerPath = containerPath.TrimEnd(PathSeparators);
+
+        // Use only '/' as directory separator.
+        containerPath = containerPath.Replace('\\', '/');
+
+        var entryAttributes = new Dictionary<string, string>();
+        if (isWindowsLayer)
+        {
+            // We grant all users access to the application directory
+            // https://github.com/buildpacks/rfcs/blob/main/text/0076-windows-security-identifiers.md
+            entryAttributes["MSWINDOWS.rawsd"] = BuiltinUsersSecurityDescriptor;
+        }
+
+        string tempTarballPath = ContentStore.GetTempFile();
+        using (FileStream fs = File.Create(tempTarballPath))
+        {
+            using (HashDigestGZipStream gz = new(fs, leaveOpen: true))
+            {
+                using (TarWriter writer = new(gz, TarEntryFormat.Pax, leaveOpen: true))
+                {
+                    // Windows layers need a Files folder
+                    if (isWindowsLayer)
+                    {
+                        var entry = new PaxTarEntry(TarEntryType.Directory, "Files", entryAttributes);
+                        writer.WriteEntry(entry);
+                    }
+
+                    // Write an entry for the application directory.
+                    WriteTarEntryForFile(writer, new DirectoryInfo(directory), containerPath, entryAttributes);
+
+                    foreach (var item in files)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        string relativePath = Path.GetRelativePath(directory, item.FullName);
+                        if (OperatingSystem.IsWindows())
+                        {
+                            // Use only '/' directory separators.
+                            relativePath = relativePath.Replace('\\', '/');
+                        }
+                        WriteTarEntryForFile(writer, item, $"{containerPath}/{relativePath}", entryAttributes);
+                    }
+
+                    // Windows layers need a Hives folder, we do not need to create any Registry Hive deltas inside
+                    if (isWindowsLayer)
+                    {
+                        var entry = new PaxTarEntry(TarEntryType.Directory, "Hives", entryAttributes);
+                        writer.WriteEntry(entry);
+                    }
+
+                } // Dispose of the TarWriter before getting the hash so the final data get written to the tar stream
+
+                int bytesWritten = gz.GetCurrentUncompressedHash(uncompressedHash);
+                Debug.Assert(bytesWritten == uncompressedHash.Length);
+            }
+
+            fileSize = fs.Length;
+
+            fs.Position = 0;
+
+            int bW = SHA256.HashData(fs, hash);
+            Debug.Assert(bW == hash.Length);
+
+            // Writes a tar entry corresponding to the file system item.
+            static void WriteTarEntryForFile(TarWriter writer, FileSystemInfo file, string containerPath, IEnumerable<KeyValuePair<string, string>> entryAttributes)
+            {
+                UnixFileMode mode = DetermineFileMode(file);
+
+                if (file is FileInfo)
+                {
+                    using var fileStream = File.OpenRead(file.FullName);
+                    PaxTarEntry entry = new(TarEntryType.RegularFile, containerPath, entryAttributes)
+                    {
+                        Mode = mode,
+                        DataStream = fileStream
+                    };
+                    writer.WriteEntry(entry);
+                }
+                else
+                {
+                    PaxTarEntry entry = new(TarEntryType.Directory, containerPath, entryAttributes)
+                    {
+                        Mode = mode
+                    };
+                    writer.WriteEntry(entry);
+                }
+
+                static UnixFileMode DetermineFileMode(FileSystemInfo file)
+                {
+                    const UnixFileMode nonExecuteMode = UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                                                        UnixFileMode.GroupRead |
+                                                        UnixFileMode.OtherRead;
+                    const UnixFileMode executeMode = nonExecuteMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+                    // On Unix, we can determine the x-bit based on the filesystem permission.
+                    // On Windows, we use executable permissions for all entries.
+                    return (OperatingSystem.IsWindows() || ((file.UnixFileMode | UnixFileMode.UserExecute) != 0)) ? executeMode : nonExecuteMode;
+                }
+            }
+        }
+
+        string contentHash = Convert.ToHexString(hash).ToLowerInvariant();
+        string uncompressedContentHash = Convert.ToHexString(uncompressedHash).ToLowerInvariant();
+
+        string layerMediaType = manifestMediaType switch
+        {
+            // TODO: configurable? gzip always?
+            SchemaTypes.DockerManifestV2 => SchemaTypes.DockerLayerGzip,
+            SchemaTypes.OciManifestV1 => SchemaTypes.OciLayerGzipV1,
+            _ => throw new ArgumentException(Resource.FormatString(nameof(Strings.UnrecognizedMediaType), manifestMediaType))
+        };
+
+        Descriptor descriptor = new()
+        {
+            MediaType = layerMediaType,
+            Size = fileSize,
+            Digest = $"sha256:{contentHash}",
+            UncompressedDigest = $"sha256:{uncompressedContentHash}",
+        };
+
+        string storedContent = ContentStore.PathForDescriptor(descriptor);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        Directory.CreateDirectory(ContentStore.ContentRoot);
+        File.Move(tempTarballPath, storedContent, overwrite: true);
+
+        return new(storedContent, descriptor);
+    }
 
     public static Layer FromDirectory(string directory, string containerPath, bool isWindowsLayer, string manifestMediaType)
     {

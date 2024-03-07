@@ -47,7 +47,21 @@ internal static class ContentStore
 
         string contentHash = digest.Substring("sha256:".Length);
 
-        string extension = descriptor.MediaType switch
+        string extension = ExtensionForMediaType(descriptor.MediaType);
+
+        return GetPathForHash(contentHash) + extension;
+    }
+
+    public static string PathForLayer(ManifestLayer layer)
+    {
+        string digest = layer.digest;
+
+        return PathForDigest(digest) + ExtensionForMediaType(layer.mediaType);
+    }
+
+    public static string ExtensionForMediaType(string mediaType)
+    {
+        string extension = mediaType switch
         {
             "application/vnd.docker.image.rootfs.diff.tar.gzip"
             or "application/vnd.oci.image.layer.v1.tar+gzip"
@@ -56,10 +70,17 @@ internal static class ContentStore
             "application/vnd.docker.image.rootfs.diff.tar"
             or "application/vnd.oci.image.layer.v1.tar"
                 => ".tar",
-            _ => throw new ArgumentException(Resource.FormatString(nameof(Strings.UnrecognizedMediaType), descriptor.MediaType))
+            _ => throw new ArgumentException(Resource.FormatString(nameof(Strings.UnrecognizedMediaType), mediaType))
         };
 
-        return GetPathForHash(contentHash) + extension;
+        return extension;
+    }
+
+    public static string PathForDigest(string digest)
+    {
+        string contentHash = digest.Substring("sha256:".Length);
+
+        return GetPathForHash(contentHash);
     }
 
     /// <summary>
