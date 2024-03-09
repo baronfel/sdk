@@ -18,9 +18,9 @@ namespace Microsoft.DotNet.Workloads.Workload.List
     internal class WorkloadListCommand : WorkloadCommandBase
     {
         private readonly bool _includePreviews;
-        private readonly bool _machineReadableOption;
         private readonly IWorkloadManifestUpdater _workloadManifestUpdater;
         private readonly IWorkloadInfoHelper _workloadListHelper;
+        private readonly ListFormat _format;
 
         public WorkloadListCommand(
             ParseResult parseResult,
@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.Workloads.Workload.List
                 workloadResolver
             );
 
-            _machineReadableOption = parseResult.GetValue(WorkloadListCommandParser.MachineReadableOption);
+            _format = parseResult.GetValue(WorkloadListCommandParser.MachineReadableOption) ? ListFormat.Json : parseResult.GetValue(WorkloadListCommandParser.FormatOption);
 
             _includePreviews = parseResult.GetValue(WorkloadListCommandParser.IncludePreviewsOption);
             string userProfileDir1 = userProfileDir ?? CliFolderPathCalculator.DotnetUserProfileFolderPath;
@@ -61,7 +61,17 @@ namespace Microsoft.DotNet.Workloads.Workload.List
         {
             IEnumerable<WorkloadId> installedList = _workloadListHelper.InstalledSdkWorkloadIds;
 
-            if (_machineReadableOption)
+            var result = _format switch
+            {
+                ListFormat.Json => PrintMachineReadable(),
+                ListFormat.Table => PrintTable(),
+                ListFormat.Mermaid => GenerateMermaidGraph(),
+                _ => 1 // this won't be hit - System.CommandLine validation will throw here
+            };
+
+            return result;
+
+            int PrintMachineReadable()
             {
                 _workloadListHelper.CheckTargetSdkVersionIsValid();
 
@@ -74,8 +84,10 @@ namespace Microsoft.DotNet.Workloads.Workload.List
                     JsonSerializer.Serialize(listOutput,
                         new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
                 Reporter.WriteLine("==workloadListJsonOutputEnd==");
+                return 0;
             }
-            else
+
+            int PrintTable()
             {
                 var manifestInfoDict = _workloadListHelper.WorkloadResolver.GetInstalledManifests().ToDictionary(info => info.Id, StringComparer.OrdinalIgnoreCase);
 
@@ -103,9 +115,72 @@ namespace Microsoft.DotNet.Workloads.Workload.List
                     Reporter.WriteLine(string.Format(LocalizableStrings.WorkloadUpdatesAvailable, string.Join(" ", updatableWorkloads)));
                     Reporter.WriteLine();
                 }
+                return 0;
             }
 
-            return 0;
+            int GenerateMermaidGraph()
+            {
+                var manifestInfoDict = _workloadListHelper.WorkloadResolver.GetInstalledManifests().ToDictionary(info => info.Id, StringComparer.OrdinalIgnoreCase);
+                HashSet<WorkloadId> workloadIds = new();
+                HashSet<WorkloadPackId> packIds = new();
+                HashSet<(WorkloadId left, WorkloadPackId right)> edges = new();
+
+                workloadIds.AddRange(installedList);
+                var packsInWorkloads = installedList.ToDictionary(m => m, m => _workloadListHelper.WorkloadResolver.GetPacksInWorkload(m));
+                var packsDict = packsInWorkloads.Values.SelectMany(p => p).ToDictionary(p => p, p => _workloadListHelper.WorkloadResolver.TryGetPackInfo(p));
+                foreach (var (workloadId, packIdsInWorkload) in packsInWorkloads)
+                {
+                    packIds.AddRange(packIdsInWorkload);
+                    foreach (var packId in packIdsInWorkload)
+                    {
+                        edges.Add((workloadId, packId));
+                    }
+                }
+                Reporter.WriteLine("```mermaid");
+                Reporter.WriteLine("---");
+                Reporter.WriteLine("title: workloads");
+                Reporter.WriteLine("---");
+                Reporter.WriteLine("graph TD");
+
+                foreach (var workloadId in workloadIds)
+                {
+                    var manifest = _workloadListHelper.WorkloadResolver.GetManifestFromWorkload(workloadId);
+                    Reporter.WriteLine($"{workloadId}[{workloadId}/{manifest.Version}]");
+                }
+
+                foreach (var packId in packIds)
+                {
+                    var packInfo = packsDict[packId];
+                    if (packInfo == null)
+                    {
+                        continue;
+                    }
+                    (string prefix, string suffix) = packInfo.Kind switch
+                    {
+                        WorkloadPackKind.Sdk => ("([", "])"),
+                        WorkloadPackKind.Library => ("[/", "\\]"),
+                        WorkloadPackKind.Framework => ("{", "}"),
+                        WorkloadPackKind.Template => ("[[", "]]"),
+                        WorkloadPackKind.Tool => ("[/", "/]"),
+                        _ => ("([", "])")
+                    };
+                    Reporter.WriteLine($"{packId}{prefix}{packId}/{packInfo.Version}{suffix}");
+                }
+
+                foreach (var edge in edges)
+                {
+                    Reporter.WriteLine($"{edge.left} --> {edge.right}");
+                }
+
+                Reporter.WriteLine("```");
+                return 0;
+            }
+        }
+
+        internal class StringTupleEqualityComparer : IEqualityComparer<(string, string)>
+        {
+            public bool Equals((string, string) x, (string, string) y) => StringComparer.OrdinalIgnoreCase.Equals(x.Item1, y.Item1) && StringComparer.OrdinalIgnoreCase.Equals(x.Item2, y.Item2);
+            public int GetHashCode([DisallowNull] (string, string) obj) => HashCode.Combine(StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Item1), StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Item2));
         }
 
         internal IEnumerable<UpdateAvailableEntry> GetUpdateAvailable(IEnumerable<WorkloadId> installedList)

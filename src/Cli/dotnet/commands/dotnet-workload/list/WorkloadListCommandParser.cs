@@ -8,10 +8,20 @@ using LocalizableStrings = Microsoft.DotNet.Workloads.Workload.List.LocalizableS
 
 namespace Microsoft.DotNet.Cli
 {
+    public enum ListFormat
+    {
+        Table,
+        Json,
+        Mermaid
+    }
+
     internal static class WorkloadListCommandParser
     {
         // arguments are a list of workload to be detected
         public static readonly CliOption<bool> MachineReadableOption = new("--machine-readable") { Hidden = true };
+
+
+        public static readonly CliOption<ListFormat> FormatOption = new("--format");
 
         public static readonly CliOption<string> VersionOption = InstallingWorkloadCommandParser.VersionOption;
 
@@ -19,7 +29,7 @@ namespace Microsoft.DotNet.Cli
         {
             Description = Workloads.Workload.Install.LocalizableStrings.TempDirOptionDescription
         }.Hide();
-        
+
         public static readonly CliOption<bool> IncludePreviewsOption = new CliOption<bool>("--include-previews")
         {
             Description = Workloads.Workload.Install.LocalizableStrings.IncludePreviewOptionDescription
@@ -40,6 +50,7 @@ namespace Microsoft.DotNet.Cli
             command.Options.Add(VersionOption);
             command.Options.Add(TempDirOption);
             command.Options.Add(IncludePreviewsOption);
+            command.Options.Add(FormatOption);
             command.AddWorkloadCommandNuGetRestoreActionConfigOptions(true);
 
             command.SetAction((parseResult) => new WorkloadListCommand(parseResult).Execute());
