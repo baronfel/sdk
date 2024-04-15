@@ -152,7 +152,7 @@ namespace Microsoft.NET.Build.Tasks
         private Version _normalizedTargetFrameworkVersion;
 
         void AddPacksForFrameworkReferences(
-            List<ITaskItem> packagesToDownload,
+            List<ITaskItem> implicitPackageReferences,
             List<ITaskItem> runtimeFrameworks,
             List<ITaskItem> targetingPacks,
             List<ITaskItem> runtimePacks,
@@ -276,7 +276,7 @@ namespace Microsoft.NET.Build.Tasks
                         TaskItem packageToDownload = new(knownFrameworkReference.TargetingPackName);
                         packageToDownload.SetMetadata(MetadataKeys.Version, targetingPackVersion);
 
-                        packagesToDownload.Add(packageToDownload);
+                        implicitPackageReferences.Add(packageToDownload);
                     }
                 }
 
@@ -349,7 +349,7 @@ namespace Microsoft.NET.Build.Tasks
                     }
 
                     ProcessRuntimeIdentifier(string.IsNullOrEmpty(RuntimeIdentifier) ? "any" : RuntimeIdentifier, runtimePackForRuntimeIDProcessing, runtimePackVersion, additionalFrameworkReferencesForRuntimePack,
-                        unrecognizedRuntimeIdentifiers, unavailableRuntimePacks, runtimePacks, packagesToDownload, isTrimmable, useRuntimePackAndDownloadIfNecessary,
+                        unrecognizedRuntimeIdentifiers, unavailableRuntimePacks, runtimePacks, implicitPackageReferences, isTrimmable, useRuntimePackAndDownloadIfNecessary,
                         wasReferencedDirectly: frameworkReference != null);
 
                     processedPrimaryRuntimeIdentifier = true;
@@ -368,7 +368,7 @@ namespace Microsoft.NET.Build.Tasks
                         //  Pass in null for the runtimePacks list, as for these runtime identifiers we only want to
                         //  download the runtime packs, but not use the assets from them
                         ProcessRuntimeIdentifier(runtimeIdentifier, runtimePackForRuntimeIDProcessing, runtimePackVersion, additionalFrameworkReferencesForRuntimePack: null,
-                            unrecognizedRuntimeIdentifiers, unavailableRuntimePacks, runtimePacks: null, packagesToDownload, isTrimmable, useRuntimePackAndDownloadIfNecessary,
+                            unrecognizedRuntimeIdentifiers, unavailableRuntimePacks, runtimePacks: null, implicitPackageReferences, isTrimmable, useRuntimePackAndDownloadIfNecessary,
                             wasReferencedDirectly: frameworkReference != null);
                     }
                 }
@@ -387,11 +387,12 @@ namespace Microsoft.NET.Build.Tasks
 
         protected override void ExecuteCore()
         {
-            List<ITaskItem> packagesToDownload = null;
+            List<ITaskItem> implicitPackageReferences = null;
             List<ITaskItem> runtimeFrameworks = null;
             List<ITaskItem> targetingPacks = null;
             List<ITaskItem> runtimePacks = null;
             List<ITaskItem> unavailableRuntimePacks = null;
+            List<ITaskItem> packagesToDownload = null;
             List<KnownRuntimePack> knownRuntimePacksForTargetFramework = null;
 
             //  Perf optimization: If there are no FrameworkReference items, then don't do anything
@@ -400,13 +401,13 @@ namespace Microsoft.NET.Build.Tasks
             {
                 _normalizedTargetFrameworkVersion = NormalizeVersion(new Version(TargetFrameworkVersion));
 
-                packagesToDownload = new List<ITaskItem>();
+                implicitPackageReferences = new List<ITaskItem>();
                 runtimeFrameworks = new List<ITaskItem>();
                 targetingPacks = new List<ITaskItem>();
                 runtimePacks = new List<ITaskItem>();
                 unavailableRuntimePacks = new List<ITaskItem>();
                 AddPacksForFrameworkReferences(
-                    packagesToDownload,
+                    implicitPackageReferences,
                     runtimeFrameworks,
                     targetingPacks,
                     runtimePacks,
@@ -415,13 +416,12 @@ namespace Microsoft.NET.Build.Tasks
             }
 
             _normalizedTargetFrameworkVersion ??= NormalizeVersion(new Version(TargetFrameworkVersion));
-            packagesToDownload ??= new List<ITaskItem>();
+            implicitPackageReferences ??= new List<ITaskItem>();
 
-            List<ITaskItem> implicitPackageReferences = new();
 
             if (ReadyToRunEnabled && ReadyToRunUseCrossgen2)
             {
-                if (AddToolPack(ToolPackType.Crossgen2, _normalizedTargetFrameworkVersion, packagesToDownload, implicitPackageReferences) is not ToolPackSupport.Supported)
+                if (AddToolPack(ToolPackType.Crossgen2, _normalizedTargetFrameworkVersion, implicitPackageReferences, implicitPackageReferences) is not ToolPackSupport.Supported)
                 {
                     Log.LogError(Strings.ReadyToRunNoValidRuntimePackageError);
                     return;
@@ -430,7 +430,7 @@ namespace Microsoft.NET.Build.Tasks
 
             if (PublishAot)
             {
-                switch (AddToolPack(ToolPackType.ILCompiler, _normalizedTargetFrameworkVersion, packagesToDownload, implicitPackageReferences))
+                switch (AddToolPack(ToolPackType.ILCompiler, _normalizedTargetFrameworkVersion, implicitPackageReferences, implicitPackageReferences))
                 {
                     case ToolPackSupport.UnsupportedForTargetFramework:
                         Log.LogError(Strings.AotUnsupportedTargetFramework);
@@ -448,7 +448,7 @@ namespace Microsoft.NET.Build.Tasks
 
             if (RequiresILLinkPack)
             {
-                if (AddToolPack(ToolPackType.ILLink, _normalizedTargetFrameworkVersion, packagesToDownload, implicitPackageReferences) is not ToolPackSupport.Supported)
+                if (AddToolPack(ToolPackType.ILLink, _normalizedTargetFrameworkVersion, implicitPackageReferences, implicitPackageReferences) is not ToolPackSupport.Supported)
                 {
                     // Keep the checked properties in sync with _RequiresILLinkPack in Microsoft.NET.Publish.targets.
                     if (PublishAot)
@@ -492,10 +492,10 @@ namespace Microsoft.NET.Build.Tasks
             if (UsingMicrosoftNETSdkWebAssembly)
             {
                 // WebAssemblySdk is used for .NET >= 6, it's ok if no pack is added.
-                AddToolPack(ToolPackType.WebAssemblySdk, _normalizedTargetFrameworkVersion, packagesToDownload, implicitPackageReferences);
+                AddToolPack(ToolPackType.WebAssemblySdk, _normalizedTargetFrameworkVersion, implicitPackageReferences, implicitPackageReferences);
             }
 
-            if (packagesToDownload.Any())
+            if (packagesToDownload?.Any() == true)
             {
                 PackagesToDownload = packagesToDownload.Distinct(new PackageToDownloadComparer<ITaskItem>()).ToArray();
             }
@@ -631,7 +631,7 @@ namespace Microsoft.NET.Build.Tasks
             HashSet<string> unrecognizedRuntimeIdentifiers,
             List<ITaskItem> unavailableRuntimePacks,
             List<ITaskItem> runtimePacks,
-            List<ITaskItem> packagesToDownload,
+            List<ITaskItem> implicitPackageReferences,
             string isTrimmable,
             bool addRuntimePackAndDownloadIfNecessary,
             bool wasReferencedDirectly)
@@ -676,7 +676,7 @@ namespace Microsoft.NET.Build.Tasks
                     //  Look up runtimePackVersion from workload manifests if necessary
                     string resolvedRuntimePackVersion = GetResolvedPackVersion(runtimePackName, runtimePackVersion);
 
-                    string runtimePackPath = GetPackPath(runtimePackName, resolvedRuntimePackVersion);
+                    // string runtimePackPath = GetPackPath(runtimePackName, resolvedRuntimePackVersion);
 
                     if (runtimePacks != null)
                     {
@@ -697,22 +697,24 @@ namespace Microsoft.NET.Build.Tasks
                             runtimePackItem.SetMetadata(MetadataKeys.AdditionalFrameworkReferences, string.Join(";", additionalFrameworkReferencesForRuntimePack));
                         }
 
-                        if (runtimePackPath != null)
-                        {
-                            runtimePackItem.SetMetadata(MetadataKeys.PackageDirectory, runtimePackPath);
-                        }
+                        // if (runtimePackPath != null)
+                        // {
+                        //     runtimePackItem.SetMetadata(MetadataKeys.PackageDirectory, runtimePackPath);
+                        // }
 
                         runtimePacks.Add(runtimePackItem);
                     }
 
                     if (EnableRuntimePackDownload &&
-                        runtimePackPath == null &&
+                        // runtimePackPath == null &&
                         (wasReferencedDirectly || !DisableTransitiveFrameworkReferenceDownloads))
                     {
+                        var version = NuGetVersion.Parse(resolvedRuntimePackVersion);
+                        var nextMax = version.Major + 1;
                         TaskItem packageToDownload = new(runtimePackName);
-                        packageToDownload.SetMetadata(MetadataKeys.Version, resolvedRuntimePackVersion);
+                        packageToDownload.SetMetadata(MetadataKeys.Version, $"(, {nextMax}.0.0)"); // latest before the next major version
 
-                        packagesToDownload.Add(packageToDownload);
+                        implicitPackageReferences.Add(packageToDownload);
                     }
                 }
             }
