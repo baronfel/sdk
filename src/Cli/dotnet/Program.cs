@@ -36,16 +36,16 @@ public class Program
     {
         var mainTimeStamp = DateTime.Now;
         using var _flushSource = Activities.s_source;
-        // using var metricsProvider = Sdk.CreateMeterProviderBuilder()
-        //     .ConfigureResource(r =>
-        //     {
-        //         r.AddService("dotnet-cli", serviceVersion: Product.Version);
-        //     })
-        //     .AddMeter(Activities.s_source.Name)
-        //     .AddHttpClientInstrumentation()
-        //     .AddRuntimeInstrumentation()
-        //     .AddOtlpExporter()
-        //     .Build();
+        using var metricsProvider = Sdk.CreateMeterProviderBuilder()
+            .ConfigureResource(r =>
+            {
+                r.AddService("dotnet-cli", serviceVersion: Product.Version);
+            })
+            .AddMeter(Activities.s_source.Name)
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddOtlpExporter()
+            .Build();
         using var tracerProvider = Sdk.CreateTracerProviderBuilder()
             .ConfigureResource(r =>
             {
