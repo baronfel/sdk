@@ -14,9 +14,7 @@ public class Product
     {
         DotnetVersionFile versionFile = DotnetFiles.VersionFileObject;
         return versionFile.BuildNumber ??
-                System.Diagnostics.FileVersionInfo.GetVersionInfo(
-                        typeof(Product).GetTypeInfo().Assembly.Location)
-                    .ProductVersion ??
+                System.Diagnostics.FileVersionInfo.GetVersionInfo(System.AppContext.BaseDirectory + "dotnet.exe").ProductVersion ??
                 string.Empty;
     }
 }

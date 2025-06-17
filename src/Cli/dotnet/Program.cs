@@ -29,38 +29,24 @@ public class Program
 {
     private static readonly string ToolPathSentinelFileName = $"{Product.Version}.toolpath.sentinel";
 
-    public static ITelemetry TelemetryClient;
-    // Create a new OpenTelemetry tracer provider and add the Azure Monitor trace exporter and the OTLP trace exporter.
-    // It is important to keep the TracerProvider instance active throughout the process lifetime.
-    private static TracerProvider tracerProvider;
+    public static ITelemetry TelemetryClient = null!;
 
-    // Create a new OpenTelemetry meter provider and add the Azure Monitor metric exporter and the OTLP metric exporter.
-    // It is important to keep the MetricsProvider instance active throughout the process lifetime.
-    private static MeterProvider metricsProvider;
 
-    static Activity? s_mainActivity;
-    private static DateTime s_mainTimeStamp;
-    private static PosixSignalRegistration s_sigIntRegistration;
-    private static PosixSignalRegistration s_sigQuitRegistration;
-    private static PosixSignalRegistration s_sigTermRegistration;
-
-    static Program()
+    public static int Main(string[] args)
     {
-        s_mainTimeStamp = DateTime.Now;
-        s_sigIntRegistration = PosixSignalRegistration.Create(PosixSignal.SIGINT, Shutdown);
-        s_sigQuitRegistration = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, Shutdown);
-        s_sigTermRegistration = PosixSignalRegistration.Create(PosixSignal.SIGTERM, Shutdown);
-        metricsProvider = Sdk.CreateMeterProviderBuilder()
-            .ConfigureResource(r =>
-            {
-                r.AddService("dotnet-cli", serviceVersion: Product.Version);
-            })
-            .AddMeter(Activities.s_source.Name)
-            .AddHttpClientInstrumentation()
-            .AddRuntimeInstrumentation()
-            .AddOtlpExporter()
-            .Build();
-        tracerProvider = Sdk.CreateTracerProviderBuilder()
+        var mainTimeStamp = DateTime.Now;
+        using var _flushSource = Activities.s_source;
+        // using var metricsProvider = Sdk.CreateMeterProviderBuilder()
+        //     .ConfigureResource(r =>
+        //     {
+        //         r.AddService("dotnet-cli", serviceVersion: Product.Version);
+        //     })
+        //     .AddMeter(Activities.s_source.Name)
+        //     .AddHttpClientInstrumentation()
+        //     .AddRuntimeInstrumentation()
+        //     .AddOtlpExporter()
+        //     .Build();
+        using var tracerProvider = Sdk.CreateTracerProviderBuilder()
             .ConfigureResource(r =>
             {
                 r.AddService("dotnet-cli", serviceVersion: Product.Version);
@@ -71,16 +57,13 @@ public class Program
             .SetSampler(new AlwaysOnSampler())
             .Build();
         (var s_parentActivityContext, var s_activityKind) = DeriveParentActivityContextFromEnv();
-        s_mainActivity = Activities.s_source.CreateActivity("main", s_activityKind, s_parentActivityContext);
+        using var s_mainActivity = Activities.s_source.CreateActivity("main", s_activityKind, s_parentActivityContext);
         s_mainActivity?.Start();
         s_mainActivity?.SetStartTime(Process.GetCurrentProcess().StartTime);
-        TrackHostStartup(s_mainTimeStamp);
+
+        TrackHostStartup(mainTimeStamp);
         SetupMSBuildEnvironmentInvariants();
         TelemetryClient = InitializeTelemetry();
-    }
-
-    public static int Main(string[] args)
-    {
         using AutomaticEncodingRestorer _encodingRestorer = new();
 
         // Setting output encoding is not available on those platforms
@@ -95,7 +78,27 @@ public class Program
 
         try
         {
-            return ProcessArgs(args);
+            ParseResult parseResult = ParseArgs(args);
+            SetDisplayName(s_mainActivity, parseResult);
+            SetupDotnetFirstRun(parseResult);
+
+            if (parseResult.CanBeInvoked())
+            {
+                return Invoke(parseResult);
+            }
+            else
+            {
+                try
+                {
+                    return LookupAndExecuteCommand(args, parseResult);
+                }
+                catch (CommandUnknownException e)
+                {
+                    Reporter.Error.WriteLine(e.Message.Red());
+                    Reporter.Output.WriteLine(e.InstructionMessage);
+                    return 1;
+                }
+            }
         }
         catch (Exception e) when (e.ShouldBeDisplayedAsError())
         {
@@ -119,22 +122,6 @@ public class Program
 
             return 1;
         }
-        finally
-        {
-            Shutdown(default!);
-        }
-
-    }
-
-    public static void Shutdown(PosixSignalContext context)
-    {
-        s_sigIntRegistration.Dispose();
-        s_sigQuitRegistration.Dispose();
-        s_sigTermRegistration.Dispose();
-        s_mainActivity?.Stop();
-        tracerProvider?.ForceFlush();
-        metricsProvider?.ForceFlush();
-        Activities.s_source.Dispose();
     }
 
     /// <summary>
@@ -235,31 +222,6 @@ public class Program
         activity.SetTag("command.name", name);
     }
 
-    internal static int ProcessArgs(string[] args)
-    {
-        ParseResult parseResult = ParseArgs(args);
-        SetupDotnetFirstRun(parseResult);
-
-        if (parseResult.CanBeInvoked())
-        {
-            InvokeBuiltInCommand(parseResult, out var exitCode);
-            return exitCode;
-        }
-        else
-        {
-            try
-            {
-                return LookupAndExecuteCommand(args, parseResult);
-            }
-            catch (CommandUnknownException e)
-            {
-                Reporter.Error.WriteLine(e.Message.Red());
-                Reporter.Output.WriteLine(e.InstructionMessage);
-                return 1;
-            }
-        }
-    }
-
     private static int LookupAndExecuteCommand(string[] args, ParseResult parseResult)
     {
         var _lookupExternalCommandActivity = Activities.s_source.StartActivity("lookup-external-command");
@@ -354,7 +316,6 @@ public class Program
             SudoEnvironmentDirectoryOverride.OverrideEnvironmentVariableToTmp(parseResult);
         }
 
-        SetDisplayName(s_mainActivity, parseResult);
 
         return parseResult;
     }
