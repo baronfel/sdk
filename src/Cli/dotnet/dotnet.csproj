@@ -15,8 +15,9 @@
     <UseAppHost>false</UseAppHost>
     <IsPackable>true</IsPackable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
     <!-- Strong naming deprecated on .NET Core -->
-    <NoWarn>$(NoWarn);CS8002</NoWarn>
+    <NoWarn>$(NoWarn);CS8002;IL2026;IL3050;IL3000;IL3002;IL2104;IL2075;IL2072;IL3053;IL2098;IL3001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

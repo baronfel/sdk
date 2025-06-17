@@ -16,7 +16,7 @@ using CommandResult = System.CommandLine.Parsing.CommandResult;
 
 namespace Microsoft.DotNet.Cli;
 
-internal static class CliSchema
+public static class CliSchema
 {
     // Using UnsafeRelaxedJsonEscaping because this JSON is not transmitted over the web. Therefore, HTML-sensitive characters are not encoded.
     // See: https://learn.microsoft.com/dotnet/api/system.text.encodings.web.javascriptencoder.unsaferelaxedjsonescaping
@@ -30,7 +30,7 @@ internal static class CliSchema
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         // needed to workaround https://github.com/dotnet/aspnetcore/issues/55692, but will need to be removed when
         // we tackle AOT in favor of the source-generated JsonTypeInfo stuff
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+        TypeInfoResolver = CliSchemaContext.Default
     };
 
     public record ArgumentDetails(string? description, int order, bool hidden, string? helpName, string valueType, bool hasDefaultValue, object? defaultValue, ArityDetails arity);
@@ -70,7 +70,11 @@ internal static class CliSchema
     {
         var command = commandResult.Command;
         RootCommandDetails transportStructure = CreateRootCommandDetails(command);
+#pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
+#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
         var result = JsonSerializer.Serialize(transportStructure, s_jsonSerializerOptions);
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+#pragma warning restore IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
         outputWriter.Write(result.AsSpan());
         outputWriter.Flush();
         var commandString = CommandHierarchyAsString(commandResult);
@@ -210,4 +214,18 @@ internal static class CliSchema
 
         return string.Join(" ", commands.AsEnumerable().Reverse());
     }
+
 }
+[JsonSourceGenerationOptions(WriteIndented = true, NewLine = "\n", DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(CliSchema.ArgumentDetails))]
+[JsonSerializable(typeof(CliSchema.ArityDetails))]
+[JsonSerializable(typeof(CliSchema.OptionDetails))]
+[JsonSerializable(typeof(CliSchema.CommandDetails))]
+[JsonSerializable(typeof(CliSchema.RootCommandDetails))]
+public partial class CliSchemaContext : JsonSerializerContext
+{
+
+}
+
+
+

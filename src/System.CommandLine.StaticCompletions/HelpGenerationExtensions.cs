@@ -4,6 +4,7 @@
 namespace System.CommandLine.StaticCompletions;
 
 using System.CommandLine;
+using System.Diagnostics.CodeAnalysis;
 
 public static class HelpExtensions
 {
@@ -111,8 +112,8 @@ public static class HelpExtensions
     public static bool IsLongAlias(this string name) => name.Length > 2 && name[0] == '-' && name[1] == '-';
     public static bool IsShortAlias(this string name) => name.Length == 2 && name[0] == '-' && char.IsAsciiLetter(name[1]);
 
-    public static bool IsDynamic(this Option option) => option.GetType().GetInterface(nameof(IDynamicOption)) is not null;
-    public static bool IsDynamic(this Argument argument) => argument.GetType().GetInterface(nameof(IDynamicArgument)) is not null;
+    public static bool IsDynamic([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Option option) => option.GetType().GetInterface(nameof(IDynamicOption)) is not null;
+    public static bool IsDynamic([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Argument argument) => argument.GetType().GetInterface(nameof(IDynamicArgument)) is not null;
 
     public static bool IsFlag(this Option option) => option.Arity.Equals(ArgumentArity.Zero);
 }

@@ -26,7 +26,7 @@ public class MSBuildForwardingApp : CommandBase
                 Type forwardingLoggerType = typeof(MSBuildForwardingLogger);
 
                 return argsToForward
-                    .Concat([$"-distributedlogger:{loggerType.FullName},{loggerType.GetTypeInfo().Assembly.Location}*{forwardingLoggerType.FullName},{forwardingLoggerType.GetTypeInfo().Assembly.Location}"]);
+                    .Concat([$"-distributedlogger:{loggerType.FullName},{Path.Combine(System.AppContext.BaseDirectory, "dotnet.dll")}*{forwardingLoggerType.FullName},{Path.Combine(System.AppContext.BaseDirectory, "dotnet.dll")}"]);
             }
             catch (Exception)
             {
