@@ -312,7 +312,7 @@
   </Target>
 
   <Target Name="GenerateMsis"
-          AfterTargets="AfterBuild"
+          AfterTargets="Pack"
           DependsOnTargets="$(GenerateMsisDependsOn)">
   </Target>
 
