@@ -84,7 +84,7 @@ public class Program
 
             if (parseResult.CanBeInvoked())
             {
-                return Invoke(parseResult);
+                return InvokeBuiltInCommand(parseResult);
             }
             else
             {
@@ -249,18 +249,18 @@ public class Program
         }
     }
 
-    static void InvokeBuiltInCommand(ParseResult parseResult, out int exitCode)
+    static int InvokeBuiltInCommand(ParseResult parseResult)
     {
         Debug.Assert(parseResult.CanBeInvoked());
         using var _invocationActivity = Activities.s_source.StartActivity("invocation");
         try
         {
-            exitCode = parseResult.Invoke();
-            exitCode = AdjustExitCode(parseResult, exitCode);
+            var exitCode = parseResult.Invoke();
+            return AdjustExitCode(parseResult, exitCode);
         }
         catch (Exception exception)
         {
-            exitCode = Parser.ExceptionHandler(exception, parseResult);
+            return Parser.ExceptionHandler(exception, parseResult);
         }
     }
 
@@ -282,8 +282,7 @@ public class Program
             }
             parseResult = Parser.Instance.Parse(["run", unmatchedCommandOrFile, .. otherTokens]);
 
-            InvokeBuiltInCommand(parseResult, out var exitCode);
-            return exitCode;
+            return InvokeBuiltInCommand(parseResult);
         }
 
         return null;
