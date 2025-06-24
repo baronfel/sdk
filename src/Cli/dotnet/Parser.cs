@@ -294,6 +294,8 @@ public static class Parser
                 exception.Message.Red().Bold());
         }
 
+        System.Diagnostics.Activity.Current?.AddException(exception);
+
         return 1;
     }
 

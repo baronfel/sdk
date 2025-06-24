@@ -15,8 +15,8 @@ internal class DangerousFileDetector : IDangerousFileDetector
         {
             return false;
         }
-
-        return InternetSecurity.IsDangerous(filePath);
+        return false;
+        //return InternetSecurity.IsDangerous(filePath); //TODO/AOT: COM Interop
     }
 
     private static class InternetSecurity
@@ -28,39 +28,39 @@ internal class DangerousFileDetector : IDangerousFileDetector
         private const uint ZoneInternet = 3;
         private const uint ZoneUntrusted = 4;
         private const int REGDB_E_CLASSNOTREG = unchecked((int)0x80040154);
-        private static IInternetSecurityManager? internetSecurityManager = null;
+        // private static IInternetSecurityManager? internetSecurityManager = null;
 
-#if NETCOREAPP
-        [SupportedOSPlatform("windows")]
-#endif
-        public static bool IsDangerous(string filename)
-        {
-            try
-            {
-                // First check the zone, if they are not an untrusted zone, they aren't dangerous
-                if (internetSecurityManager == null)
-                {
-                    Type? iismType = Type.GetTypeFromCLSID(new Guid(CLSID_InternetSecurityManager));
-                    if (iismType is not null)
-                    {
-                        internetSecurityManager = Activator.CreateInstance(iismType) as IInternetSecurityManager;
-                    }
-                }
-                int zone = 0;
-                internetSecurityManager?.MapUrlToZone(Path.GetFullPath(filename), out zone, 0);
-                if (zone < ZoneInternet)
-                {
-                    return false;
-                }
-                // By default all file types that get here are considered dangerous
-                return true;
-            }
-            catch (COMException ex) when (ex.ErrorCode == REGDB_E_CLASSNOTREG)
-            {
-                // When the COM is missing(Class not registered error), it is in a locked down
-                // version like Nano Server
-                return false;
-            }
-        }
+// #if NETCOREAPP
+//         [SupportedOSPlatform("windows")]
+// #endif
+//         public static bool IsDangerous(string filename)
+//         {
+//             try
+//             {
+//                 // First check the zone, if they are not an untrusted zone, they aren't dangerous
+//                 if (internetSecurityManager == null)
+//                 {
+//                     Type? iismType = Type.GetTypeFromCLSID(new Guid(CLSID_InternetSecurityManager));
+//                     if (iismType is not null)
+//                     {
+//                         internetSecurityManager = Activator.CreateInstance(iismType) as IInternetSecurityManager;
+//                     }
+//                 }
+//                 int zone = 0;
+//                 internetSecurityManager?.MapUrlToZone(Path.GetFullPath(filename), out zone, 0);
+//                 if (zone < ZoneInternet)
+//                 {
+//                     return false;
+//                 }
+//                 // By default all file types that get here are considered dangerous
+//                 return true;
+//             }
+//             catch (COMException ex) when (ex.ErrorCode == REGDB_E_CLASSNOTREG)
+//             {
+//                 // When the COM is missing(Class not registered error), it is in a locked down
+//                 // version like Nano Server
+//                 return false;
+//             }
+//         }
     }
 }
