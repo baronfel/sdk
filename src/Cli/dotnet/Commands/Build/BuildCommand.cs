@@ -22,8 +22,8 @@ public static class BuildCommand
         parseResult.ShowHelpOrErrorIfAppropriate();
 
         CommonOptions.ValidateSelfContainedOptions(
-            parseResult.GetResult(BuildCommandParser.SelfContainedOption) is not null,
-            parseResult.GetResult(BuildCommandParser.NoSelfContainedOption) is not null);
+            parseResult.HasOption(BuildCommandParser.SelfContainedOption),
+            parseResult.HasOption(BuildCommandParser.NoSelfContainedOption));
 
         bool noRestore = parseResult.GetResult(BuildCommandParser.NoRestoreOption) is not null;
 
