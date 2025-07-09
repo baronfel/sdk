@@ -48,7 +48,6 @@ internal static class CommonOptions
             Description = description,
             HelpName = CliStrings.FrameworkArgumentName
         }
-        .AddCompletions(CliCompletion.TargetFrameworksFromProjectFile)
         .ForwardAsSingle(o => $"-property:TargetFramework={o}");
 
     public static Option<string> ArtifactsPathOption =
@@ -77,15 +76,13 @@ internal static class CommonOptions
         {
             HelpName = RuntimeArgName,
             Description = description
-        }.ForwardAsMany(RuntimeArgFunc!)
-        .AddCompletions(CliCompletion.RunTimesFromProjectFile);
+        }.ForwardAsMany(RuntimeArgFunc!);
 
     public static Option<string> LongFormRuntimeOption =
         new DynamicForwardedOption<string>(RuntimeOptionName)
         {
             HelpName = RuntimeArgName
-        }.ForwardAsMany(RuntimeArgFunc!)
-        .AddCompletions(CliCompletion.RunTimesFromProjectFile);
+        }.ForwardAsMany(RuntimeArgFunc!);
 
     public static Option<bool> CurrentRuntimeOption(string description) =>
         new ForwardedOption<bool>("--use-current-runtime", "--ucr")
@@ -99,8 +96,7 @@ internal static class CommonOptions
         {
             Description = description,
             HelpName = CliStrings.ConfigurationArgumentName
-        }.ForwardAsSingle(o => $"-property:Configuration={o}")
-        .AddCompletions(CliCompletion.ConfigurationsFromProjectFileOrDefaults);
+        }.ForwardAsSingle(o => $"-property:Configuration={o}");
 
     public static Option<string> VersionSuffixOption =
         new ForwardedOption<string>("--version-suffix")

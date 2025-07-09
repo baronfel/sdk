@@ -4,7 +4,6 @@
 #nullable disable
 
 using System.CommandLine;
-using Microsoft.DotNet.Cli.Commands.Workload;
 using Microsoft.DotNet.Cli.Extensions;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Configurer;
@@ -93,6 +92,5 @@ public static class SudoEnvironmentDirectoryOverride
         }
     }
 
-    private static bool IsRunningWorkloadCommand(ParseResult parseResult) =>
-        parseResult.RootSubCommandResult() == (WorkloadCommandParser.GetCommand().Name);
+    private static bool IsRunningWorkloadCommand(ParseResult parseResult) => false;
 }

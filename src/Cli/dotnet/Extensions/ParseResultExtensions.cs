@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using Microsoft.DotNet.Cli.Commands.Run;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Cli.Utils.Extensions;
 using static Microsoft.DotNet.Cli.Parser;
@@ -185,23 +184,6 @@ public static class ParseResultExtensions
                 parseResult.GetValue(CommonOptions.OperatingSystemOption),
                 CommonOptions.ArchOptionValue(parseResult)) :
             null;
-    }
-
-    public static bool UsingRunCommandShorthandProjectOption(this ParseResult parseResult)
-    {
-        if (parseResult.HasOption(RunCommandParser.PropertyOption) && parseResult.GetValue(RunCommandParser.PropertyOption).Any())
-        {
-            var projVals = parseResult.GetRunCommandShorthandProjectValues();
-            if (projVals.Any())
-            {
-                if (projVals.Count() != 1 || parseResult.HasOption(RunCommandParser.ProjectOption))
-                {
-                    throw new GracefulException(CliStrings.OnlyOneProjectAllowed);
-                }
-                return true;
-            }
-        }
-        return false;
     }
 
     public static IEnumerable<string> GetRunCommandShorthandProjectValues(this ParseResult parseResult)

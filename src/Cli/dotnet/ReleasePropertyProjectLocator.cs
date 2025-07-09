@@ -120,7 +120,7 @@ internal class ReleasePropertyProjectLocator
             {
                 try // First, look for a project in the directory.
                 {
-                    return TryGetProjectInstance(MsbuildProject.GetProjectFileFromDirectory(arg).FullName, globalProps);
+                    return null;
                 }
                 catch (GracefulException)  // Fall back to looking for a solution if multiple project files are found, or there's no project in the directory.
                 {

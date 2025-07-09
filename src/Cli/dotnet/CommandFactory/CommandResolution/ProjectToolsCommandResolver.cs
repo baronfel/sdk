@@ -382,40 +382,9 @@ public class ProjectToolsCommandResolver(
         Reporter.Verbose.WriteLine(string.Format(CliStrings.MSBuildArgs,
             ArgumentEscaper.EscapeAndConcatenateArgArrayForProcessStart(args)));
 
-        int result;
-        string stdOut;
-        string stdErr;
-
-        var forwardingAppWithoutLogging = new MSBuildForwardingAppWithoutLogging(args, msBuildExePath);
-        if (forwardingAppWithoutLogging.ExecuteMSBuildOutOfProc)
-        {
-            result = forwardingAppWithoutLogging
-                .GetProcessStartInfo()
-                .ExecuteAndCaptureOutput(out stdOut, out stdErr);
-        }
-        else
-        {
-            // Execute and capture output of MSBuild running in-process.
-            var outWriter = new StringWriter();
-            var errWriter = new StringWriter();
-            var savedOutWriter = Console.Out;
-            var savedErrWriter = Console.Error;
-            try
-            {
-                Console.SetOut(outWriter);
-                Console.SetError(errWriter);
-
-                result = forwardingAppWithoutLogging.Execute();
-
-                stdOut = outWriter.ToString();
-                stdErr = errWriter.ToString();
-            }
-            finally
-            {
-                Console.SetOut(savedOutWriter);
-                Console.SetError(savedErrWriter);
-            }
-        }
+        int result = 1;
+        string stdOut = "";
+        string stdErr = "";
 
         if (result != 0)
         {

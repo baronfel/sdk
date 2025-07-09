@@ -5,13 +5,6 @@
 
 using System.CommandLine;
 using System.Globalization;
-using Microsoft.DotNet.Cli.Commands.Build;
-using Microsoft.DotNet.Cli.Commands.Clean;
-using Microsoft.DotNet.Cli.Commands.Hidden.InternalReportInstallSuccess;
-using Microsoft.DotNet.Cli.Commands.Pack;
-using Microsoft.DotNet.Cli.Commands.Publish;
-using Microsoft.DotNet.Cli.Commands.Run;
-using Microsoft.DotNet.Cli.Commands.Test;
 using Microsoft.DotNet.Cli.Extensions;
 using Microsoft.DotNet.Cli.Utils;
 
@@ -53,13 +46,6 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
                 }
             }
         }
-        else if (objectToFilter is InstallerSuccessReport installerSuccessReport)
-        {
-            result.Add(new ApplicationInsightsEntryFormat(
-                "install/reportsuccess",
-                new Dictionary<string, string> { { "exeName", installerSuccessReport.ExeName } }
-            ));
-        }
         else if (objectToFilter is Exception exception)
         {
             result.Add(new ApplicationInsightsEntryFormat(
@@ -91,33 +77,9 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
         new AllowListToSendFirstAppliedOptions(["add", "remove", "list", "solution", "nuget"]),
         new TopLevelCommandNameAndOptionToLog
         (
-            topLevelCommandName: ["build", "publish"],
-            optionsToLog: [ BuildCommandParser.FrameworkOption, PublishCommandParser.FrameworkOption,
-                BuildCommandParser.RuntimeOption, PublishCommandParser.RuntimeOption, BuildCommandParser.ConfigurationOption,
-                PublishCommandParser.ConfigurationOption ]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["run", "clean", "test"],
-            optionsToLog: [ RunCommandParser.FrameworkOption, CleanCommandParser.FrameworkOption,
-                TestCommandParser.FrameworkOption, RunCommandParser.ConfigurationOption, CleanCommandParser.ConfigurationOption,
-                TestCommandParser.ConfigurationOption ]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["pack"],
-            optionsToLog: [PackCommandParser.ConfigurationOption]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
             topLevelCommandName: ["vstest"],
             optionsToLog: [ CommonOptions.TestPlatformOption,
                 CommonOptions.TestFrameworkOption, CommonOptions.TestLoggerOption ]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["publish"],
-            optionsToLog: [PublishCommandParser.RuntimeOption]
         ),
         new AllowListToSendVerbSecondVerbFirstArgument(["workload", "tool", "new"]),
     ];

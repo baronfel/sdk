@@ -7,41 +7,9 @@ using System.CommandLine;
 using System.CommandLine.Completions;
 using System.CommandLine.Invocation;
 using System.Reflection;
-using Microsoft.DotNet.Cli.Commands.Build;
-using Microsoft.DotNet.Cli.Commands.BuildServer;
-using Microsoft.DotNet.Cli.Commands.Clean;
 using Microsoft.DotNet.Cli.Commands.Dnx;
-using Microsoft.DotNet.Cli.Commands.Format;
-using Microsoft.DotNet.Cli.Commands.Fsi;
-using Microsoft.DotNet.Cli.Commands.Help;
-using Microsoft.DotNet.Cli.Commands.Hidden.Add;
-using Microsoft.DotNet.Cli.Commands.Hidden.Add.Package;
-using Microsoft.DotNet.Cli.Commands.Hidden.Complete;
-using Microsoft.DotNet.Cli.Commands.Hidden.InternalReportInstallSuccess;
-using Microsoft.DotNet.Cli.Commands.Hidden.List;
-using Microsoft.DotNet.Cli.Commands.Hidden.List.Reference;
-using Microsoft.DotNet.Cli.Commands.Hidden.Parse;
-using Microsoft.DotNet.Cli.Commands.Hidden.Remove;
-using Microsoft.DotNet.Cli.Commands.MSBuild;
-using Microsoft.DotNet.Cli.Commands.New;
 using Microsoft.DotNet.Cli.Commands.NuGet;
-using Microsoft.DotNet.Cli.Commands.Pack;
-using Microsoft.DotNet.Cli.Commands.Package;
-using Microsoft.DotNet.Cli.Commands.Package.Add;
-using Microsoft.DotNet.Cli.Commands.Project;
-using Microsoft.DotNet.Cli.Commands.Publish;
-using Microsoft.DotNet.Cli.Commands.Reference;
-using Microsoft.DotNet.Cli.Commands.Restore;
-using Microsoft.DotNet.Cli.Commands.Run;
-using Microsoft.DotNet.Cli.Commands.Run.Api;
-using Microsoft.DotNet.Cli.Commands.Sdk;
-using Microsoft.DotNet.Cli.Commands.Solution;
-using Microsoft.DotNet.Cli.Commands.Store;
-using Microsoft.DotNet.Cli.Commands.Test;
 using Microsoft.DotNet.Cli.Commands.Tool;
-using Microsoft.DotNet.Cli.Commands.VSTest;
-using Microsoft.DotNet.Cli.Commands.Workload;
-using Microsoft.DotNet.Cli.Commands.Workload.Search;
 using Microsoft.DotNet.Cli.Extensions;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Cli.Utils.Extensions;
@@ -58,42 +26,11 @@ public static class Parser
         Directives = { new DiagramDirective(), new SuggestDirective(), new EnvironmentVariablesDirective() }
     };
 
-    public static readonly Command InstallSuccessCommand = InternalReportInstallSuccessCommandParser.GetCommand();
-
     // Subcommands
     public static readonly Command[] Subcommands =
     [
-        AddCommandParser.GetCommand(),
-        BuildCommandParser.GetCommand(),
-        BuildServerCommandParser.GetCommand(),
-        CleanCommandParser.GetCommand(),
         DnxCommandParser.GetCommand(),
-        FormatCommandParser.GetCommand(),
-        CompleteCommandParser.GetCommand(),
-        FsiCommandParser.GetCommand(),
-        ListCommandParser.GetCommand(),
-        MSBuildCommandParser.GetCommand(),
-        NewCommandParser.GetCommand(),
-        NuGetCommandParser.GetCommand(),
-        PackCommandParser.GetCommand(),
-        PackageCommandParser.GetCommand(),
-        ParseCommandParser.GetCommand(),
-        ProjectCommandParser.GetCommand(),
-        PublishCommandParser.GetCommand(),
-        ReferenceCommandParser.GetCommand(),
-        RemoveCommandParser.GetCommand(),
-        RestoreCommandParser.GetCommand(),
-        RunCommandParser.GetCommand(),
-        RunApiCommandParser.GetCommand(),
-        SolutionCommandParser.GetCommand(),
-        StoreCommandParser.GetCommand(),
-        TestCommandParser.GetCommand(),
         ToolCommandParser.GetCommand(),
-        VSTestCommandParser.GetCommand(),
-        HelpCommandParser.GetCommand(),
-        SdkCommandParser.GetCommand(),
-        InstallSuccessCommand,
-        WorkloadCommandParser.GetCommand(),
         new System.CommandLine.StaticCompletions.CompletionsCommand()
     ];
 
@@ -364,25 +301,6 @@ public static class Parser
             {
                 NuGetCommand.Run(context.ParseResult);
             }
-            else if (command.Name.Equals(MSBuildCommandParser.GetCommand().Name))
-            {
-                new MSBuildForwardingApp(helpArgs).Execute();
-                context.Output.WriteLine();
-                additionalOption(context);
-            }
-            else if (command.Name.Equals(VSTestCommandParser.GetCommand().Name))
-            {
-                new VSTestForwardingApp(helpArgs).Execute();
-            }
-            else if (command.Name.Equals(FormatCommandParser.GetCommand().Name))
-            {
-                var arguments = context.ParseResult.GetValue(FormatCommandParser.Arguments);
-                new FormatForwardingApp([.. arguments, .. helpArgs]).Execute();
-            }
-            else if (command.Name.Equals(FsiCommandParser.GetCommand().Name))
-            {
-                new FsiForwardingApp(helpArgs).Execute();
-            }
             else if (command is TemplateEngine.Cli.Commands.ICustomHelp helpCommand)
             {
                 var blocks = helpCommand.CustomHelpLayout();
@@ -391,40 +309,8 @@ public static class Parser
                     block(context);
                 }
             }
-            else if (command.Name.Equals(FormatCommandParser.GetCommand().Name))
-            {
-                new FormatForwardingApp(helpArgs).Execute();
-            }
-            else if (command.Name.Equals(FsiCommandParser.GetCommand().Name))
-            {
-                new FsiForwardingApp(helpArgs).Execute();
-            }
             else
             {
-                if (command.Name.Equals(ListReferenceCommandParser.GetCommand().Name))
-                {
-                    Command listCommand = command.Parents.Single() as Command;
-
-                    for (int i = 0; i < listCommand.Arguments.Count; i++)
-                    {
-                        if (listCommand.Arguments[i].Name == CliStrings.SolutionOrProjectArgumentName)
-                        {
-                            // Name is immutable now, so we create a new Argument with the right name..
-                            listCommand.Arguments[i] = ListCommandParser.CreateSlnOrProjectArgument(CliStrings.ProjectArgumentName, CliStrings.ProjectArgumentDescription);
-                        }
-                    }
-                }
-                else if (command.Name.Equals(AddPackageCommandParser.GetCommand().Name) || command.Name.Equals(AddCommandParser.GetCommand().Name))
-                {
-                    // Don't show package completions in help
-                    PackageAddCommandParser.CmdPackageArgument.CompletionSources.Clear();
-                }
-                else if (command.Name.Equals(WorkloadSearchCommandParser.GetCommand().Name))
-                {
-                    // Set shorter description for displaying parent command help.
-                    WorkloadSearchVersionsCommandParser.GetCommand().Description = CliStrings.ShortWorkloadSearchVersionDescription;
-                }
-
                 base.Write(context);
             }
         }

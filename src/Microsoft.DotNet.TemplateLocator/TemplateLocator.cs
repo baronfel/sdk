@@ -3,34 +3,28 @@
 
 using Microsoft.DotNet.DotNetSdkResolver;
 using Microsoft.DotNet.NativeWrapper;
-using Microsoft.NET.Sdk.WorkloadManifestReader;
 
 namespace Microsoft.DotNet.TemplateLocator
 {
     public sealed class TemplateLocator
     {
-        private IWorkloadManifestProvider? _workloadManifestProvider;
-        private IWorkloadResolver? _workloadResolver;
         private readonly Lazy<NETCoreSdkResolver> _netCoreSdkResolver;
         private readonly Func<string, string?> _getEnvironmentVariable;
         private readonly Func<string>? _getCurrentProcessPath;
 
         public TemplateLocator()
-            : this(Environment.GetEnvironmentVariable, null, VSSettings.Ambient, null, null)
+            : this(Environment.GetEnvironmentVariable, null, VSSettings.Ambient)
         {
         }
 
         /// <summary>
         /// Test constructor
         /// </summary>
-        public TemplateLocator(Func<string, string?> getEnvironmentVariable, Func<string>? getCurrentProcessPath, VSSettings vsSettings,
-            IWorkloadManifestProvider? workloadManifestProvider, IWorkloadResolver? workloadResolver)
+        public TemplateLocator(Func<string, string?> getEnvironmentVariable, Func<string>? getCurrentProcessPath, VSSettings vsSettings)
         {
             _netCoreSdkResolver =
                 new Lazy<NETCoreSdkResolver>(() => new NETCoreSdkResolver(getEnvironmentVariable, vsSettings));
 
-            _workloadManifestProvider = workloadManifestProvider;
-            _workloadResolver = workloadResolver;
             _getEnvironmentVariable = getEnvironmentVariable;
             _getCurrentProcessPath = getCurrentProcessPath;
         }
@@ -53,14 +47,8 @@ namespace Microsoft.DotNet.TemplateLocator
 
             //  Will the current directory correspond to the folder we are creating a project in?  If we need
             //  to honor global.json workload version selection for template creation in Visual Studio, we may
-            //  need to update this interface to pass a folder where we should start the search for global.json
-            string? globalJsonPath = SdkDirectoryWorkloadManifestProvider.GetGlobalJsonPath(Environment.CurrentDirectory);
-
-            _workloadManifestProvider ??= new SdkDirectoryWorkloadManifestProvider(dotnetRootPath, sdkVersion, userProfileDir, globalJsonPath);
-            _workloadResolver ??= WorkloadResolver.Create(_workloadManifestProvider, dotnetRootPath, sdkVersion, userProfileDir);
-
-            return _workloadResolver.GetInstalledWorkloadPacksOfKind(WorkloadPackKind.Template)
-                .Select(pack => new OptionalSdkTemplatePackageInfo(pack.Id, pack.Version, pack.Path)).ToList();
+            //  need to update this interface to pass a folder where we should start the search for global.jso
+            return [];
         }
 
         public bool TryGetDotnetSdkVersionUsedInVs(string vsVersion, out string? sdkVersion)

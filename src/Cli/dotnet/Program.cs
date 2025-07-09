@@ -6,8 +6,6 @@ using System.CommandLine.Parsing;
 using System.Diagnostics;
 using Microsoft.DotNet.Cli.CommandFactory;
 using Microsoft.DotNet.Cli.CommandFactory.CommandResolution;
-using Microsoft.DotNet.Cli.Commands.Run;
-using Microsoft.DotNet.Cli.Commands.Workload;
 using Microsoft.DotNet.Cli.Extensions;
 using Microsoft.DotNet.Cli.ShellShim;
 using Microsoft.DotNet.Cli.Telemetry;
@@ -232,7 +230,7 @@ public class Program
             args.GetSubArguments(),
             FrameworkConstants.CommonFrameworks.NetStandardApp15);
         _lookupExternalCommandActivity?.Dispose();
-        
+
         if (resolvedCommandSpec is null && TryRunFileBasedApp(parseResult) is { } fileBasedAppExitCode)
         {
             _lookupExternalCommandActivity?.Dispose();
@@ -242,7 +240,7 @@ public class Program
         {
             var resolvedCommand = CommandFactoryUsingResolver.CreateOrThrow(commandName, resolvedCommandSpec);
             _lookupExternalCommandActivity?.Dispose();
-            
+
             using var _executionActivity = Activities.s_source.StartActivity("execute-extensible-command");
             var result = resolvedCommand.Execute();
             return result.ExitCode;
@@ -269,8 +267,7 @@ public class Program
         // If we didn't match any built-in commands, and a C# file path is the first argument,
         // parse as `dotnet run file.cs ..rest_of_args` instead.
         if (parseResult.CommandResult.Command is RootCommand
-            && parseResult.GetValue(Parser.DotnetSubCommand) is { } unmatchedCommandOrFile
-            && VirtualProjectBuildingCommand.IsValidEntryPointPath(unmatchedCommandOrFile))
+            && parseResult.GetValue(Parser.DotnetSubCommand) is { } unmatchedCommandOrFile)
         {
             List<string> otherTokens = new(parseResult.Tokens.Count - 1);
             foreach (var token in parseResult.Tokens)
@@ -345,14 +342,6 @@ public class Program
             ReportDotnetHomeUsage(environmentProvider);
 
             var isDotnetBeingInvokedFromNativeInstaller = false;
-            if (parseResult.CommandResult.Command.Name.Equals(Parser.InstallSuccessCommand.Name))
-            {
-                aspNetCertificateSentinel = new NoOpAspNetCertificateSentinel();
-                firstTimeUseNoticeSentinel = new NoOpFirstTimeUseNoticeSentinel();
-                toolPathSentinel = new NoOpFileSentinel(exists: false);
-                isDotnetBeingInvokedFromNativeInstaller = true;
-            }
-
             var dotnetFirstRunConfiguration = new DotnetFirstRunConfiguration(
                 generateAspNetCertificate: generateAspNetCertificate,
                 telemetryOptout: telemetryOptout,
@@ -376,7 +365,7 @@ public class Program
                 skipFirstTimeUseCheck: getStarOptionPassed);
         }
     }
-    
+
     private static int AdjustExitCode(ParseResult parseResult, int exitCode)
     {
         if (parseResult.Errors.Count > 0)
@@ -449,7 +438,6 @@ public class Program
         {
             try
             {
-                WorkloadIntegrityChecker.RunFirstUseCheck(reporter);
             }
             catch (Exception)
             {

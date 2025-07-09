@@ -3,7 +3,6 @@
 
 #nullable disable
 
-using Microsoft.DotNet.Cli.Commands.Workload;
 using Microsoft.DotNet.Cli.Utils;
 using LocalizableStrings = Microsoft.DotNet.Cli.Utils.LocalizableStrings;
 using RuntimeEnvironment = Microsoft.DotNet.Cli.Utils.RuntimeEnvironment;
@@ -24,8 +23,6 @@ public class CommandLineInfo
         Reporter.Output.WriteLine($"{LocalizableStrings.DotNetSdkInfoLabel}");
         Reporter.Output.WriteLine($" Version:           {Product.Version}");
         Reporter.Output.WriteLine($" Commit:            {commitSha}");
-        Reporter.Output.WriteLine($" Workload version:  {WorkloadCommandParser.GetWorkloadsVersion()}");
-        Reporter.Output.WriteLine($" MSBuild version:   {MSBuildForwardingAppWithoutLogging.MSBuildVersion.ToString()}");
         Reporter.Output.WriteLine();
         Reporter.Output.WriteLine($"{LocalizableStrings.DotNetRuntimeInfoLabel}");
         Reporter.Output.WriteLine($" OS Name:     {RuntimeEnvironment.OperatingSystem}");
@@ -40,7 +37,6 @@ public class CommandLineInfo
     {
         Reporter.Output.WriteLine();
         Reporter.Output.WriteLine($"{LocalizableStrings.DotnetWorkloadInfoLabel}");
-        WorkloadCommandParser.ShowWorkloadsInfo(showVersion: false);
     }
 
     private static string GetDisplayRid(DotnetVersionFile versionFile)
