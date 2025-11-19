@@ -4,6 +4,7 @@
     "projects": [
       "src\\BuiltInTools\\dotnet-watch\\dotnet-watch.csproj",
       "src\\Cli\\dotnet\\dotnet.csproj",
+      "src\\Cli\\Microsoft.DotNet.Cli.CommandLine\\Microsoft.DotNet.Cli.CommandLine.csproj",
       "src\\Cli\\Microsoft.DotNet.Cli.Utils\\Microsoft.DotNet.Cli.Utils.csproj",
       "test\\dotnet-new.IntegrationTests\\dotnet-new.IntegrationTests.csproj",
       "test\\dotnet-watch.Tests\\dotnet-watch.Tests.csproj",
