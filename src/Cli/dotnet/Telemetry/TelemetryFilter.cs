@@ -1,9 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Globalization;
 using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Commands.Build;
@@ -26,7 +25,7 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
     public IEnumerable<ApplicationInsightsEntryFormat> Filter(object objectToFilter)
     {
         var result = new List<ApplicationInsightsEntryFormat>();
-        Dictionary<string, double> measurements = null;
+        Dictionary<string, double>? measurements = null;
         string globalJsonState = string.Empty;
         if (objectToFilter is Tuple<ParseResult, Dictionary<string, double>> parseResultWithMeasurements)
         {
@@ -47,7 +46,7 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
             var topLevelCommandName = parseResult.RootSubCommandResult();
             if (topLevelCommandName != null)
             {
-                Dictionary<string, string> properties = new()
+                Dictionary<string, string?> properties = new()
                 {
                     ["verb"] = topLevelCommandName
                 };
@@ -67,7 +66,10 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
 
                 foreach (IParseResultLogRule rule in ParseResultLogRules)
                 {
-                    result.AddRange(rule.AllowList(parseResult, measurements));
+                    if (rule.AllowList(parseResult, measurements) is List<ApplicationInsightsEntryFormat> ruleResult)
+                    {
+                        result.AddRange(ruleResult);
+                    }
                 }
             }
         }
@@ -75,14 +77,14 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
         {
             result.Add(new ApplicationInsightsEntryFormat(
                 "install/reportsuccess",
-                new Dictionary<string, string> { { "exeName", installerSuccessReport.ExeName } }
+                new Dictionary<string, string?> { { "exeName", installerSuccessReport.ExeName } }
             ));
         }
         else if (objectToFilter is Exception exception)
         {
             result.Add(new ApplicationInsightsEntryFormat(
                 ExceptionEventName,
-                new Dictionary<string, string>
+                new Dictionary<string, string?>
                 {
                     {"exceptionType", exception.GetType().ToString()},
                     {"detail", ExceptionToStringWithoutMessage(exception) }
@@ -140,11 +142,60 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
         new AllowListToSendVerbSecondVerbFirstArgument(["workload", "tool", "new"]),
     ];
 
+    private class AllowWhatTheCommandAllows() : IParseResultLogRule
+    {
+        public List<ApplicationInsightsEntryFormat>? AllowList(ParseResult parseResult, Dictionary<string, double>? measurements = null)
+        {
+            var commandResult = parseResult.CommandResult;
+            if (commandResult is null)
+            {
+                return null;
+            }
+
+            var command = commandResult.Command;
+            var commandName = command.Name;
+            var commandParents = GetCommandParentNames(commandResult);
+            var entry = new ApplicationInsightsEntryFormat(
+                    "sublevelparser/command",
+                    new Dictionary<string, string?>
+                    {
+                        { "verb", commandName },
+                        { "parents", $"[{(commandParents is null ? null : string.Join("/", commandParents))}]" }
+                    },
+                    measurements);
+            foreach (var optionResult in commandResult.Children.OfType<System.CommandLine.Parsing.OptionResult>())
+            {
+                var option = optionResult.Option;
+                if (option is not null && option.SendInTelemetry)
+                {
+                    var rawValue = optionResult.GetValueOrDefault<object>();
+                    var name = option.ReportableName;
+                    var value = option.ReportableValue(rawValue);
+                    entry.Properties![name] = value;
+                }
+            }
+            return [ entry ];
+        }
+
+        private static string[]? GetCommandParentNames(System.CommandLine.Parsing.CommandResult command)
+        {
+            var parents = new List<string>();
+            var parent = command.Parent;
+            while (parent is System.CommandLine.Parsing.CommandResult parentCommand)
+            {
+                parents.Add(parentCommand.Command.Name);
+                parent = parentCommand.Parent;
+            }
+            parents.Reverse();
+            return [.. parents];
+        }
+    }
+
     private static void LogVulnerableOptionForPackageUpdateCommand(
         ICollection<ApplicationInsightsEntryFormat> result,
         ParseResult parseResult,
         string topLevelCommandName,
-        Dictionary<string, double> measurements = null)
+        Dictionary<string, double>? measurements = null)
     {
         if (topLevelCommandName == "package" && parseResult.CommandResult.Command != null && parseResult.CommandResult.Command.Name == "update")
         {
@@ -152,7 +203,7 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
 
             result.Add(new ApplicationInsightsEntryFormat(
                 "sublevelparser/command",
-                new Dictionary<string, string>()
+                new Dictionary<string, string?>()
                 {
                     { "verb", "package update" },
                     { "vulnerable", hasVulnerableOption.ToString()}
@@ -165,14 +216,14 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
         ICollection<ApplicationInsightsEntryFormat> result,
         ParseResult parseResult,
         string topLevelCommandName,
-        Dictionary<string, double> measurements = null)
+        Dictionary<string, double>? measurements = null)
     {
         if (parseResult.IsDotnetBuiltInCommand() &&
             parseResult.SafelyGetValueForOption<VerbosityOptions>("--verbosity") is VerbosityOptions verbosity)
         {
             result.Add(new ApplicationInsightsEntryFormat(
                 "sublevelparser/command",
-                new Dictionary<string, string>()
+                new Dictionary<string, string?>()
                 {
                     { "verb", topLevelCommandName},
                     { "verbosity", Enum.GetName(verbosity)}
@@ -233,7 +284,7 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
         return s;
     }
 
-    private static Dictionary<string, double> RemoveZeroTimes(Dictionary<string, double> measurements)
+    private static Dictionary<string, double>? RemoveZeroTimes(Dictionary<string, double>? measurements)
     {
         if (measurements != null)
         {

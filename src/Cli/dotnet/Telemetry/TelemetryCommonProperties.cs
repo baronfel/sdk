@@ -25,7 +25,7 @@ internal class TelemetryCommonProperties(
     private readonly ICIEnvironmentDetector _ciEnvironmentDetector = ciEnvironmentDetector ?? new CIEnvironmentDetectorForTelemetry();
     private readonly ILLMEnvironmentDetector _llmEnvironmentDetector = llmEnvironmentDetector ?? new LLMEnvironmentDetectorForTelemetry();
     private readonly Func<string> _getCurrentDirectory = getCurrentDirectory ?? Directory.GetCurrentDirectory;
-    private readonly Func<string, string> _hasher = hasher ?? Sha256Hasher.Hash;
+    private readonly Func<string, string> _hasher = hasher ?? Sha256Hasher.HashWithNormalizedCasing;
     private readonly Func<string> _getMACAddress = getMACAddress ?? MacAddressGetter.GetMacAddress;
     private readonly Func<string> _getDeviceId = getDeviceId ?? DeviceIdGetter.GetDeviceId;
     private readonly IUserLevelCacheWriter _userLevelCacheWriter = userLevelCacheWriter ?? new UserLevelCacheWriter();

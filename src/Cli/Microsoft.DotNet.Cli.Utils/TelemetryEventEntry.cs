@@ -105,9 +105,9 @@ public class ApplicationInsightsEntryFormat(
     public IDictionary<string, string?>? Properties { get; } = properties;
     public IDictionary<string, double>? Measurements { get; } = measurements;
 
-    public ApplicationInsightsEntryFormat WithAppliedToPropertiesValue(Func<string?, string> func)
+    public ApplicationInsightsEntryFormat WithAppliedToPropertiesValue(Func<string, string> func)
     {
-        var appliedProperties = Properties?.ToDictionary(p => p.Key, p => (string?)func(p.Value));
+        var appliedProperties = Properties?.ToDictionary(p => p.Key, p => p.Value is null ? null : func(p.Value));
         return new ApplicationInsightsEntryFormat(EventName, appliedProperties, Measurements);
     }
 }
