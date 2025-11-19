@@ -3,7 +3,6 @@
 
 using System.Collections.ObjectModel;
 using System.CommandLine;
-using System.CommandLine.Completions;
 using System.CommandLine.Parsing;
 using System.CommandLine.StaticCompletions;
 using Microsoft.DotNet.Cli.CommandLine;
@@ -169,6 +168,7 @@ internal static class CommonOptions
         .ForwardAsSingle(o => $"--verbosity:{o}")
         .AggregateRepeatedTokens();
 
+    // TODO: parse this into a targetframework structure for safety
     public static Option<string> FrameworkOption(string description) =>
         new Option<string>("--framework", "-f")
         {
@@ -177,7 +177,8 @@ internal static class CommonOptions
             IsDynamic = true
         }
         .ForwardAsSingle(o => $"--property:TargetFramework={o}")
-        .AddCompletions(CliCompletion.TargetFrameworksFromProjectFile);
+        .AddCompletions(CliCompletion.TargetFrameworksFromProjectFile)
+        .ReportInTelemetry(Sha256Hasher.HashWithNormalizedCasing);
 
     public static Option<string> ArtifactsPathOption =
         new Option<string>(
@@ -207,7 +208,8 @@ internal static class CommonOptions
             Description = description,
             IsDynamic = true
         }.ForwardAsMany(RuntimeArgFunc!)
-        .AddCompletions(CliCompletion.RunTimesFromProjectFile);
+        .AddCompletions(CliCompletion.RunTimesFromProjectFile)
+        .ReportInTelemetry(Sha256Hasher.HashWithNormalizedCasing);
 
     public static Option<string> LongFormRuntimeOption =
         new Option<string>(RuntimeOptionName)
@@ -215,7 +217,8 @@ internal static class CommonOptions
             HelpName = RuntimeArgName,
             IsDynamic = true,
         }.ForwardAsMany(RuntimeArgFunc!)
-        .AddCompletions(CliCompletion.RunTimesFromProjectFile);
+        .AddCompletions(CliCompletion.RunTimesFromProjectFile)
+        .ReportInTelemetry(Sha256Hasher.HashWithNormalizedCasing);
 
     public static Option<bool> CurrentRuntimeOption(string description) =>
         new Option<bool>("--use-current-runtime", "--ucr")
@@ -231,7 +234,8 @@ internal static class CommonOptions
             HelpName = CliStrings.ConfigurationArgumentName,
             IsDynamic = true
         }.ForwardAsSingle(o => $"--property:Configuration={o}")
-        .AddCompletions(CliCompletion.ConfigurationsFromProjectFileOrDefaults);
+        .AddCompletions(CliCompletion.ConfigurationsFromProjectFileOrDefaults)
+        .ReportInTelemetry(v => v is null ? null : Sha256Hasher.HashWithNormalizedCasing(v));
 
     public static Option<string> VersionSuffixOption =
         new Option<string>("--version-suffix")
@@ -393,11 +397,11 @@ internal static class CommonOptions
         return result;
     }
 
-    public static readonly Option<string> TestPlatformOption = new("--Platform");
+    public static readonly Option<string> TestPlatformOption = new Option<string>("--Platform").ReportInTelemetry(Sha256Hasher.HashWithNormalizedCasing);
 
-    public static readonly Option<string> TestFrameworkOption = new("--Framework");
+    public static readonly Option<string> TestFrameworkOption = new Option<string>("--Framework").ReportInTelemetry(Sha256Hasher.HashWithNormalizedCasing);
 
-    public static readonly Option<string[]> TestLoggerOption = new("--logger");
+    public static readonly Option<string[]> TestLoggerOption = new Option<string[]>("--logger").ReportInTelemetry(v => v is string[] loggers ? string.Join(";", loggers) : null);
 
     /// <summary>
     /// Creates an implementation of the <c>--no-logo</c> option.

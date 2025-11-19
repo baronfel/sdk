@@ -12,11 +12,12 @@ internal static class ToolInstallCommandParser
 {
     public static readonly Argument<PackageIdentityWithRange> PackageIdentityArgument = CommonArguments.RequiredPackageIdentityArgument("dotnetsay", "2.1.7");
 
-    public static readonly Option<string> VersionOption = new("--version")
+    public static readonly Option<string> VersionOption = new Option<string>("--version")
     {
         Description = CliCommandStrings.ToolInstallVersionOptionDescription,
         HelpName = CliCommandStrings.ToolInstallVersionOptionName
-    };
+    }
+    .ReportInTelemetry(version => [ new ( "package.version", version ) ]);
 
     public static readonly Option<string> ConfigOption = new("--configfile")
     {

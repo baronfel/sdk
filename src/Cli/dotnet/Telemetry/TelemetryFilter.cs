@@ -107,39 +107,7 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
 
     private static List<IParseResultLogRule> ParseResultLogRules =>
     [
-        new AllowListToSendFirstArgument(["new", "help"]),
-        new AllowListToSendFirstAppliedOptions(["add", "remove", "list", "solution", "nuget"]),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["build", "publish"],
-            optionsToLog: [ BuildCommandParser.FrameworkOption, PublishCommandParser.FrameworkOption,
-                BuildCommandParser.RuntimeOption, PublishCommandParser.RuntimeOption, BuildCommandParser.ConfigurationOption,
-                PublishCommandParser.ConfigurationOption ]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["run", "clean", "test"],
-            optionsToLog: [ RunCommandParser.FrameworkOption, CleanCommandParser.FrameworkOption,
-                TestCommandParser.FrameworkOption, RunCommandParser.ConfigurationOption, CleanCommandParser.ConfigurationOption,
-                TestCommandParser.ConfigurationOption ]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["pack"],
-            optionsToLog: [PackCommandParser.ConfigurationOption]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["vstest"],
-            optionsToLog: [ CommonOptions.TestPlatformOption,
-                CommonOptions.TestFrameworkOption, CommonOptions.TestLoggerOption ]
-        ),
-        new TopLevelCommandNameAndOptionToLog
-        (
-            topLevelCommandName: ["publish"],
-            optionsToLog: [PublishCommandParser.RuntimeOption]
-        ),
-        new AllowListToSendVerbSecondVerbFirstArgument(["workload", "tool", "new"]),
+        new AllowWhatTheCommandAllows(),
     ];
 
     private class AllowWhatTheCommandAllows() : IParseResultLogRule
@@ -160,18 +128,44 @@ internal class TelemetryFilter(Func<string, string> hash) : ITelemetryFilter
                     new Dictionary<string, string?>
                     {
                         { "verb", commandName },
+                        { "topLevelVerb", commandParents is null || commandParents.Length == 0 ? null : commandParents[0]},
                         { "parents", $"[{(commandParents is null ? null : string.Join("/", commandParents))}]" }
                     },
                     measurements);
-            foreach (var optionResult in commandResult.Children.OfType<System.CommandLine.Parsing.OptionResult>())
+
+            foreach (var optionResult in commandResult.Children.OfType<OptionResult>())
             {
                 var option = optionResult.Option;
                 if (option is not null && option.SendInTelemetry)
                 {
                     var rawValue = optionResult.GetValueOrDefault<object>();
-                    var name = option.ReportableName;
-                    var value = option.ReportableValue(rawValue);
-                    entry.Properties![name] = value;
+                    var values = option.ReportableValues(rawValue);
+                    if (values is null)
+                    {
+                        continue;
+                    }
+                    foreach (var (name, value) in values)
+                    {
+                        entry.Properties![$"option.{name}"] = value;
+                    }
+                }
+            }
+
+            foreach (var argumentResult in commandResult.Children.OfType<ArgumentResult>())
+            {
+                var argument = argumentResult.Argument;
+                if (argument is not null && argument.SendInTelemetry)
+                {
+                    var rawValue = argumentResult.GetValueOrDefault<object>();
+                    var values = argument.ReportableValues(rawValue);
+                    if (values is null)
+                    {
+                        continue;
+                    }
+                    foreach (var (name, value) in values)
+                    {
+                        entry.Properties![$"argument.{name}"] = value;
+                    }
                 }
             }
             return [ entry ];

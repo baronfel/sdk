@@ -2,17 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CommandLine;
+using Microsoft.DotNet.Cli.CommandLine;
 
 namespace Microsoft.DotNet.Cli.Commands.Workload.Install;
 
 internal static class WorkloadInstallCommandParser
 {
-    public static readonly Argument<IEnumerable<string>> WorkloadIdArgument = new("workloadId")
+    public static readonly Argument<string[]> WorkloadIdArgument =
+    new Argument<string[]>("workloadId")
     {
         HelpName = CliCommandStrings.WorkloadIdArgumentName,
         Arity = ArgumentArity.OneOrMore,
         Description = CliCommandStrings.WorkloadIdArgumentDescription
-    };
+    }
+    .ReportInTelemetry(new TelemetryExtensions.SymbolTelemetryReporter<string[]>(v =>
+        v is string[] ids && ids.Length > 0
+        ? [ new ( "workload.ids", string.Join(";", ids) ) ]
+        : null));
 
     public static readonly Option<bool> SkipSignCheckOption = new("--skip-sign-check")
     {

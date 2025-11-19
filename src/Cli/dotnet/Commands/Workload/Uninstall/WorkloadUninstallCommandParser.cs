@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.Cli.Commands.Workload.Uninstall;
 
 internal static class WorkloadUninstallCommandParser
 {
-    public static readonly Argument<IEnumerable<string>> WorkloadIdArgument = WorkloadInstallCommandParser.WorkloadIdArgument;
+    public static readonly Argument<string[]> WorkloadIdArgument = WorkloadInstallCommandParser.WorkloadIdArgument;
     public static readonly Option<string> VersionOption = InstallingWorkloadCommandParser.VersionOption;
     public static readonly Option<Utils.VerbosityOptions> VerbosityOption = CommonOptions.VerbosityOption(Utils.VerbosityOptions.normal);
 

@@ -19,58 +19,54 @@ public static class TelemetryExtensions
         /// A function that can be used to report custom telemetry for this symbol.
         /// If not set, the value will be reported as-is.
         /// </summary>
-        public Func<object?, string?>? TelemetryReporter { get; set; }
+        public SymbolTelemetryReporter? TelemetryReporter { get; set; }
     }
 
-    private static readonly Func<object?, string?> s_boolTelemetryReporter = b => b switch
-        {
-            true => "true",
-            false => "false",
-            _ => null
-        };
+    private static readonly Func<string, SymbolTelemetryReporter> s_boolTelemetryReporter = name => TransformValue<bool>(value =>
+        [
+            new (name, value ? "true" : "false")
+        ]);
+
+    private static string TrimOptionPrefix(string optionName) =>
+        optionName.TrimStart(['-', '/']);
 
     private static readonly Dictionary<Symbol, TelemetryConfiguration> s_telemetryConfigs = new();
     private static readonly Lock s_lock = new();
 
-    public static Func<object?, string?> TransformValue<T>(Func<T?, string> telemetryReporter) =>
+    public delegate KeyValuePair<string, string?>[]? SymbolTelemetryReporter<T>(T value);
+    public delegate KeyValuePair<string, string?>[]? SymbolTelemetryReporter(object? value);
+
+    /// <summary>
+    /// A wrapper to transform a telemetry reporter function that works on a specific type T
+    /// into one that works on object?, which is the general interface used by our telemetry reporting.
+    /// </summary>
+    public static SymbolTelemetryReporter TransformValue<T>(SymbolTelemetryReporter<T> telemetryReporter) =>
         (obj) => obj is T value ? telemetryReporter(value) : null;
 
-    extension(Option option)
+    extension (Symbol symbol)
     {
-        /// <summary>
-        /// The name of the option to be reported in telemetry - this is the options' name minus any '-' or '/' leading characters
-        /// </summary>
-        public string ReportableName => option.Name.TrimStart(['-', '/']);
-
         public bool SendInTelemetry =>
-            s_telemetryConfigs.TryGetValue(option, out var config) && config.ShouldSend;
+            s_telemetryConfigs.TryGetValue(symbol, out var config) && config.ShouldSend;
 
         /// <summary>
-        /// If an option is allowed to be reported to telemetry, then this method will return the reportable value.
+        /// If an option is allowed to be reported to telemetry, then this method will return the reportable values.
         /// </summary>
-        public string? ReportableValue(object? value) =>
-            s_telemetryConfigs.TryGetValue(option, out var config) && config.TelemetryReporter != null
+        public KeyValuePair<string, string?>[]? ReportableValues(object? value) =>
+            s_telemetryConfigs.TryGetValue(symbol, out var config) && config.TelemetryReporter != null
                 ? config.TelemetryReporter(value)
                 : null;
     }
 
     extension<T>(Option<T> option)
     {
-
-        /// <summary>
-        /// Marks this option to be reported in telemetry
-        /// </summary>
-        /// <returns></returns>
-        public Option<T> ReportInTelemetry(Func<T?, string>? telemetryReporter = null)
+        public Option<T> ReportInTelemetry(SymbolTelemetryReporter<T> reporter)
         {
             lock (s_lock)
             {
                 if (s_telemetryConfigs.TryGetValue(option, out var config))
                 {
                     config.ShouldSend = true;
-                    config.TelemetryReporter = telemetryReporter != null
-                        ? TransformValue(telemetryReporter)
-                        : null;
+                    config.TelemetryReporter = TransformValue<T>(reporter);
                     s_telemetryConfigs[option] = config;
                 }
                 else
@@ -78,13 +74,100 @@ public static class TelemetryExtensions
                     s_telemetryConfigs[option] = new TelemetryConfiguration
                     {
                         ShouldSend = true,
-                        TelemetryReporter = telemetryReporter != null
-                            ? TransformValue(telemetryReporter)
-                            : null
+                        TelemetryReporter = TransformValue<T>(reporter)
                     };
                 }
             }
             return option;
+        }
+
+        public Option<T> ReportInTelemetry(Func<T, string?> reporter)
+        {
+            lock (s_lock)
+            {
+                if (s_telemetryConfigs.TryGetValue(option, out var config))
+                {
+                    config.ShouldSend = true;
+                    config.TelemetryReporter = TransformValue<T>(v => {
+                        var reportValue = reporter(v);
+                        return reportValue is not null
+                            ? [new (TrimOptionPrefix(option.Name), reportValue)]
+                            : null;
+                    });
+                    s_telemetryConfigs[option] = config;
+                }
+                else
+                {
+                    s_telemetryConfigs[option] = new TelemetryConfiguration
+                    {
+                        ShouldSend = true,
+                        TelemetryReporter = TransformValue<T>(v => {
+                            var reportValue = reporter(v);
+                            return reportValue is not null
+                                ? [new (TrimOptionPrefix(option.Name), reportValue)]
+                                : null;
+                        })
+                    };
+                }
+            }
+            return option;
+        }
+    }
+
+    extension<T>(Argument<T> argument)
+    {
+        public Argument<T> ReportInTelemetry(SymbolTelemetryReporter<T> reporter)
+        {
+            lock (s_lock)
+            {
+                if (s_telemetryConfigs.TryGetValue(argument, out var config))
+                {
+                    config.ShouldSend = true;
+                    config.TelemetryReporter = TransformValue<T>(reporter);
+                    s_telemetryConfigs[argument] = config;
+                }
+                else
+                {
+                    s_telemetryConfigs[argument] = new TelemetryConfiguration
+                    {
+                        ShouldSend = true,
+                        TelemetryReporter = TransformValue<T>(reporter)
+                    };
+                }
+            }
+            return argument;
+        }
+
+        public Argument<T> ReportInTelemetry(Func<T, string?> reporter)
+        {
+            lock (s_lock)
+            {
+                if (s_telemetryConfigs.TryGetValue(argument, out var config))
+                {
+                    config.ShouldSend = true;
+                    config.TelemetryReporter = TransformValue<T>(v => {
+                        var reportValue = reporter(v);
+                        return reportValue is not null
+                            ? [new (argument.Name, reportValue)]
+                            : null;
+                    });
+                    s_telemetryConfigs[argument] = config;
+                }
+                else
+                {
+                    s_telemetryConfigs[argument] = new TelemetryConfiguration
+                    {
+                        ShouldSend = true,
+                        TelemetryReporter = TransformValue<T>(v => {
+                            var reportValue = reporter(v);
+                            return reportValue is not null
+                                ? [new (argument.Name, reportValue)]
+                                : null;
+                        })
+                    };
+                }
+            }
+            return argument;
         }
     }
 
@@ -101,7 +184,7 @@ public static class TelemetryExtensions
                 if (s_telemetryConfigs.TryGetValue(option, out var config))
                 {
                     config.ShouldSend = true;
-                    config.TelemetryReporter = s_boolTelemetryReporter;
+                    config.TelemetryReporter = s_boolTelemetryReporter(TrimOptionPrefix(option.Name));
                     s_telemetryConfigs[option] = config;
                 }
                 else
@@ -109,7 +192,7 @@ public static class TelemetryExtensions
                     s_telemetryConfigs[option] = new TelemetryConfiguration
                     {
                         ShouldSend = true,
-                        TelemetryReporter = s_boolTelemetryReporter
+                        TelemetryReporter = s_boolTelemetryReporter(TrimOptionPrefix(option.Name))
                     };
                 }
             }
@@ -117,8 +200,13 @@ public static class TelemetryExtensions
         }
     }
 
-    private static Func<object?, string?> EnumTelemetryReporter<T>() where T : struct, System.Enum =>
-        static (obj) => obj is T value ? Enum.GetName<T>(value) : null;
+    private static SymbolTelemetryReporter<T> EnumTelemetryReporter<T>(string optionName) where T : struct, System.Enum =>
+        (value) => {
+            var reportValue = Enum.GetName<T>(value);
+            return reportValue is not null
+                ? [new (optionName, reportValue)]
+                : null;
+        };
 
     extension<T>(Option<T> option) where T: struct, System.Enum
     {
@@ -133,7 +221,7 @@ public static class TelemetryExtensions
                 if (s_telemetryConfigs.TryGetValue(option, out var config))
                 {
                     config.ShouldSend = true;
-                    config.TelemetryReporter = EnumTelemetryReporter<T>();
+                    config.TelemetryReporter = TransformValue<T>(EnumTelemetryReporter<T>(TrimOptionPrefix(option.Name)));
                     s_telemetryConfigs[option] = config;
                 }
                 else
@@ -141,7 +229,7 @@ public static class TelemetryExtensions
                     s_telemetryConfigs[option] = new TelemetryConfiguration
                     {
                         ShouldSend = true,
-                        TelemetryReporter = EnumTelemetryReporter<T>()
+                        TelemetryReporter = TransformValue<T>(EnumTelemetryReporter<T>(TrimOptionPrefix(option.Name)))
                     };
                 }
             }

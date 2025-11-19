@@ -13,24 +13,31 @@ namespace Microsoft.DotNet.Cli
 {
     internal class CommonArguments
     {
+        private static TelemetryExtensions.SymbolTelemetryReporter<PackageIdentityWithRange> s_packageIdentityTelemetryReporter =
+            pid => [
+                new ( "package.id", pid.Id ),
+                new ( "package.version", pid.HasVersion ? pid.VersionRange.ToString() : null )
+            ];
 
         public static Argument<PackageIdentityWithRange?> OptionalPackageIdentityArgument(string examplePackage = "Newtonsoft.Json", string exampleVersion = "13.0.3") =>
-            new("packageId")
+            new Argument<PackageIdentityWithRange?>("packageId")
             {
                 Description = string.Format(CliStrings.PackageIdentityArgumentDescription, examplePackage, exampleVersion),
                 CustomParser = (ArgumentResult argumentResult) => ParsePackageIdentityWithVersionSeparator(argumentResult.Tokens[0]?.Value),
                 Arity = ArgumentArity.ZeroOrOne,
                 IsDynamic = true
-            };
+            }
+            .ReportInTelemetry(v => v is PackageIdentityWithRange pid ? s_packageIdentityTelemetryReporter(pid) : null);
 
         public static Argument<PackageIdentityWithRange> RequiredPackageIdentityArgument(string examplePackage = "Newtonsoft.Json", string exampleVersion = "13.0.3") =>
-            new("packageId")
+            new Argument<PackageIdentityWithRange>("packageId")
             {
                 Description = string.Format(CliStrings.PackageIdentityArgumentDescription, examplePackage, exampleVersion),
                 CustomParser = (ArgumentResult argumentResult) => ParsePackageIdentityWithVersionSeparator(argumentResult.Tokens[0]?.Value)!.Value,
                 Arity = ArgumentArity.ExactlyOne,
                 IsDynamic = true
-            };
+            }
+            .ReportInTelemetry(s_packageIdentityTelemetryReporter);
 
         private static PackageIdentityWithRange? ParsePackageIdentityWithVersionSeparator(string? packageIdentity, char versionSeparator = '@')
         {

@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
-
 using System.CommandLine;
 using Microsoft.DotNet.Cli.CommandLine;
 
@@ -12,11 +10,13 @@ internal static class HelpCommandParser
 {
     public static readonly string DocsLink = "https://aka.ms/dotnet-help";
 
-    public static readonly Argument<string[]> Argument = new(CliCommandStrings.CommandArgumentName)
+    public static readonly Argument<string[]> Argument =
+    new Argument<string[]>(CliCommandStrings.CommandArgumentName)
     {
         Description = CliCommandStrings.CommandArgumentDescription,
         Arity = ArgumentArity.ZeroOrMore
-    };
+    }
+    .ReportInTelemetry(args => args is string[] argv ? string.Join(",", argv.Select(Utils.Sha256Hasher.HashWithNormalizedCasing)) : string.Empty);
 
     private static readonly Command Command = ConstructCommand();
 

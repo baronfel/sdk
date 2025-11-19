@@ -88,12 +88,13 @@ namespace Microsoft.TemplateEngine.Cli.Commands
             Recursive = true
         };
 
-        internal static Argument<string> ShortNameArgument { get; } = new("template-short-name")
+        internal static Argument<string> ShortNameArgument { get; } = new Argument<string>("template-short-name")
         {
             Description = SymbolStrings.Command_Instantiate_Argument_ShortName,
             Arity = new ArgumentArity(0, 1),
             Hidden = true
-        };
+        }
+        .ReportInTelemetry(shortName => shortName is string name ? Microsoft.DotNet.Cli.Utils.Sha256Hasher.HashWithNormalizedCasing(name) : string.Empty);
 
         internal static Argument<string[]> RemainingArguments { get; } = new("template-args")
         {
