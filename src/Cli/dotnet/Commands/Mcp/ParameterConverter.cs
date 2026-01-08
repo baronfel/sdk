@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.CommandLine;
-using System.Text.Json.Nodes;
+using System.Text.Json;
 
 namespace Microsoft.DotNet.Cli.Commands.Mcp;
 
@@ -13,40 +13,34 @@ namespace Microsoft.DotNet.Cli.Commands.Mcp;
 public static class ParameterConverter
 {
     /// <summary>
-    /// Converts JSON parameters to an args array for a System.CommandLine command.
+    /// Converts JSON parameters to an args array using pre-collected arguments and options.
     /// </summary>
-    /// <param name="command">The command to build args for</param>
+    /// <param name="arguments">The arguments to process</param>
+    /// <param name="options">The options to process</param>
     /// <param name="parameters">JSON parameters from MCP tool call</param>
     /// <returns>Array of command-line arguments</returns>
-    public static string[] ConvertToArgs(Command command, JsonNode? parameters)
+    public static string[] ConvertToArgs(
+        IEnumerable<Argument> arguments,
+        IEnumerable<Option> options,
+        IDictionary<string, JsonElement> parameters)
     {
         var args = new List<string>();
 
-        if (parameters is not JsonObject paramObj)
-        {
-            return args.ToArray();
-        }
-
         // Add arguments (positional)
-        foreach (var argument in command.Arguments)
+        foreach (var argument in arguments)
         {
             var argName = ToSnakeCase(argument.Name);
-            if (paramObj.TryGetPropertyValue(argName, out var value) && value != null)
+            if (parameters.TryGetValue(argName, out JsonElement value) && value.ValueKind != JsonValueKind.Null)
             {
                 AddArgumentValue(args, value, argument);
             }
         }
 
         // Add options (flags)
-        foreach (var option in command.Options)
+        foreach (var option in options)
         {
-            if (IsGlobalOption(option))
-            {
-                continue;
-            }
-
             var optName = ToSnakeCase(option.Name.TrimStart('-'));
-            if (paramObj.TryGetPropertyValue(optName, out var value) && value != null)
+            if (parameters.TryGetValue(optName, out JsonElement value) && value.ValueKind != JsonValueKind.Null)
             {
                 AddOptionValue(args, option, value);
             }
@@ -55,77 +49,75 @@ public static class ParameterConverter
         return args.ToArray();
     }
 
-    private static void AddArgumentValue(List<string> args, JsonNode value, Argument argument)
+    private static void AddArgumentValue(List<string> args, JsonElement value, Argument argument)
     {
-        if (value is JsonArray array)
+        // Handle array types based on arity
+        if (value.ValueKind == JsonValueKind.Array)
         {
-            foreach (var item in array)
+            foreach (var item in value.EnumerateArray())
             {
-                if (item != null)
+                if (item.ValueKind != JsonValueKind.Null)
                 {
-                    args.Add(item.ToString());
+                    var stringValue = DeserializeValue(item, argument.ValueType);
+                    if (stringValue != null)
+                    {
+                        args.Add(stringValue);
+                    }
                 }
             }
         }
         else
         {
-            var stringValue = value.ToString();
-            if (!string.IsNullOrEmpty(stringValue))
+            var stringValue = DeserializeValue(value, argument.ValueType);
+            if (stringValue != null)
             {
                 args.Add(stringValue);
             }
         }
     }
 
-    private static void AddOptionValue(List<string> args, Option option, JsonNode value)
+    private static void AddOptionValue(List<string> args, Option option, JsonElement value)
     {
         var optionName = GetPreferredOptionName(option);
 
-        // Handle boolean flags
+        // Handle boolean flags - only add if true
         if (option.ValueType == typeof(bool))
         {
-            if (value is JsonValue jsonValue && jsonValue.TryGetValue<bool>(out var boolValue) && boolValue)
+            if (value.ValueKind == JsonValueKind.True)
             {
                 args.Add(optionName);
             }
             return;
         }
 
-        // Handle array values
-        if (value is JsonArray array)
+        // Handle array values based on arity
+        if (value.ValueKind == JsonValueKind.Array)
         {
-            foreach (var item in array)
+            foreach (var item in value.EnumerateArray())
             {
-                if (item != null)
+                if (item.ValueKind != JsonValueKind.Null)
                 {
-                    args.Add(optionName);
-                    args.Add(item.ToString());
+                    var stringValue = DeserializeValue(item, option.ValueType);
+                    if (stringValue != null)
+                    {
+                        args.Add(optionName);
+                        args.Add(stringValue);
+                    }
                 }
             }
             return;
         }
 
         // Handle single values
-        var stringValue = value.ToString();
-        if (!string.IsNullOrEmpty(stringValue) && stringValue != "null")
+        var singleValue = DeserializeValue(value, option.ValueType);
+        if (singleValue != null)
         {
             args.Add(optionName);
-            args.Add(stringValue);
+            args.Add(singleValue);
         }
     }
 
-    private static string GetPreferredOptionName(Option option)
-    {
-        // Prefer long form (--name) over short form (-n)
-        if (!string.IsNullOrEmpty(option.Name))
-        {
-            return option.Name.StartsWith("--") ? option.Name : $"--{option.Name.TrimStart('-')}";
-        }
-
-        // Fall back to first alias
-        var alias = option.Aliases.FirstOrDefault() ?? "--unknown";
-        return alias.StartsWith("--") ? alias : $"--{alias.TrimStart('-')}";
-    }
+    private static string GetPreferredOptionName(Option option) => option.Name;
 
     private static string ToSnakeCase(string input)
     {
@@ -165,9 +157,113 @@ public static class ParameterConverter
         return result.ToString();
     }
 
-    private static bool IsGlobalOption(Option option)
+    /// <summary>
+    /// Deserializes a JSON value to a string representation appropriate for command-line arguments,
+    /// handling type conversions based on the target type.
+    /// </summary>
+    private static string? DeserializeValue(JsonElement value, Type targetType)
     {
-        var globalOptionNames = new[] { "--help", "-h", "--version", "-v", "--verbosity", "--diagnostics", "-d" };
-        return globalOptionNames.Any(name => option.Name == name || option.Aliases.Contains(name));
+        // Unwrap nullable types
+        var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+        // Handle null values
+        if (value.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        // Handle string types - use raw string value
+        if (underlyingType == typeof(string))
+        {
+            return value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
+        }
+
+        // Handle boolean types
+        if (underlyingType == typeof(bool))
+        {
+            if (value.ValueKind == JsonValueKind.True) return "true";
+            if (value.ValueKind == JsonValueKind.False) return "false";
+            // Try to parse string as boolean
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                var stringValue = value.GetString();
+                if (bool.TryParse(stringValue, out var boolValue))
+                {
+                    return boolValue ? "true" : "false";
+                }
+            }
+            return null;
+        }
+
+        // Handle numeric types
+        if (underlyingType == typeof(int) || underlyingType == typeof(long) ||
+            underlyingType == typeof(short) || underlyingType == typeof(byte) ||
+            underlyingType == typeof(uint) || underlyingType == typeof(ulong) ||
+            underlyingType == typeof(ushort) || underlyingType == typeof(sbyte))
+        {
+            if (value.ValueKind == JsonValueKind.Number)
+            {
+                return value.GetRawText();
+            }
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                return value.GetString();
+            }
+            return null;
+        }
+
+        // Handle floating-point types
+        if (underlyingType == typeof(float) || underlyingType == typeof(double) || underlyingType == typeof(decimal))
+        {
+            if (value.ValueKind == JsonValueKind.Number)
+            {
+                return value.GetRawText();
+            }
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                return value.GetString();
+            }
+            return null;
+        }
+
+        // Handle enum types - expect string values matching enum names
+        if (underlyingType.IsEnum)
+        {
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                var stringValue = value.GetString();
+                // Validate that it's a valid enum value
+                if (!string.IsNullOrEmpty(stringValue) && Enum.IsDefined(underlyingType, stringValue))
+                {
+                    return stringValue;
+                }
+            }
+            return null;
+        }
+
+        // Handle arrays and collections - get element type
+        if (underlyingType.IsArray)
+        {
+            var elementType = underlyingType.GetElementType();
+            if (elementType != null)
+            {
+                return DeserializeValue(value, elementType);
+            }
+        }
+
+        if (underlyingType.IsGenericType)
+        {
+            var genericTypeDef = underlyingType.GetGenericTypeDefinition();
+            if (genericTypeDef == typeof(IEnumerable<>) ||
+                genericTypeDef == typeof(List<>) ||
+                genericTypeDef == typeof(IList<>))
+            {
+                var elementType = underlyingType.GetGenericArguments()[0];
+                return DeserializeValue(value, elementType);
+            }
+        }
+
+        // Default: convert to string
+        return value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
     }
 }

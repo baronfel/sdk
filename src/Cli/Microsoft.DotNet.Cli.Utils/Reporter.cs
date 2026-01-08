@@ -25,7 +25,7 @@ public class Reporter : IReporter
         Reset();
     }
 
-    private Reporter(AnsiConsole? console)
+    internal Reporter(AnsiConsole? console)
     {
         _console = console;
     }

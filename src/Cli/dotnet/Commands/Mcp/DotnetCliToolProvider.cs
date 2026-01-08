@@ -38,7 +38,7 @@ public class DotnetCliToolProvider
         // Check if this is a leaf command (has a handler or no subcommands)
         bool isLeaf = command.Subcommands.Count == 0 || command.Action != null;
 
-        if (isLeaf)
+        if (isLeaf && !command.Hidden)
         {
             yield return command;
         }

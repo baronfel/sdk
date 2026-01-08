@@ -8,7 +8,7 @@ public class AnsiConsole
     private const int Light = 0x08;
     private readonly bool _ansiEnabled;
 
-    private AnsiConsole(TextWriter writer)
+    internal AnsiConsole(TextWriter writer)
     {
         Writer = writer;
 
