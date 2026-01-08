@@ -68,6 +68,9 @@
     <!-- Lift dependency of NETStandard.Library.NETFramework to version produced in SBRP. -->
     <PackageReference Include="NETStandard.Library" VersionOverride="$(NETStandardLibraryVersion)" ExcludeAssets="All" />
     <PackageReference Include="Microsoft.CodeAnalysis.BuildClient" />
+    <!-- MCP Server Mode Support -->
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IncludeAspNetCoreRuntime)' != 'false' ">
