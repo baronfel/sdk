@@ -5,7 +5,7 @@ using System.CommandLine;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Microsoft.DotNet.Cli.Commands.Mcp;
+namespace Microsoft.DotNet.Cli.Mcp;
 
 /// <summary>
 /// Builds JSON schemas for MCP tools from System.CommandLine commands.

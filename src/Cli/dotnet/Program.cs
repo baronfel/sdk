@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.CommandFactory;
 using Microsoft.DotNet.Cli.CommandFactory.CommandResolution;
 using Microsoft.DotNet.Cli.CommandLine;
-using Microsoft.DotNet.Cli.Commands.Mcp;
 using Microsoft.DotNet.Cli.Commands.Run;
 using Microsoft.DotNet.Cli.Commands.Workload;
 using Microsoft.DotNet.Cli.Extensions;
@@ -132,14 +131,6 @@ public class Program
 
     internal static int ProcessArgs(string[] args, TimeSpan startupTime)
     {
-        // Check for MCP server mode BEFORE any other processing
-        // This allows the MCP server to start without telemetry, first-time setup, etc.
-        if (args.Length > 0 && args[0] == "--mcp")
-        {
-            // Run MCP server mode (synchronously block on async method)
-            return McpServerMode.RunAsync(args.Skip(1).ToArray()).GetAwaiter().GetResult();
-        }
-
         Dictionary<string, double> performanceData = [];
 
         PerformanceLogEventSource.Log.BuiltInCommandParserStart();

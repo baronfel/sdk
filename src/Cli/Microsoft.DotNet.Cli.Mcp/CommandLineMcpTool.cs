@@ -3,14 +3,13 @@
 
 using System.CommandLine;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using McpTool = ModelContextProtocol.Protocol.Tool;
 using SysArgument = System.CommandLine.Argument;
 using SysOption = System.CommandLine.Option;
 
-namespace Microsoft.DotNet.Cli.Commands.Mcp;
+namespace Microsoft.DotNet.Cli.Mcp;
 
 /// <summary>
 /// MCP tool implementation backed by a System.CommandLine Command.
@@ -23,6 +22,16 @@ public class CommandLineMcpTool : McpServerTool
     private readonly string[] _commandTokens;
     private readonly IReadOnlyList<SysArgument> _arguments;
     private readonly IReadOnlyList<SysOption> _options;
+
+    private static ParserConfiguration s_parserConfiguration = new()
+    {
+        EnablePosixBundling = false,
+    };
+
+    private static InvocationConfiguration s_invocationConfiguration = new()
+    {
+        EnableDefaultExceptionHandler = false
+    };
 
     public CommandLineMcpTool(Command command)
     {
@@ -51,7 +60,6 @@ public class CommandLineMcpTool : McpServerTool
         try
         {
             // Convert JSON parameters to command-line arguments
-            // Convert the arguments dictionary to JsonNode for ParameterConverter
             string[] args;
             if (context?.Params?.Arguments is IDictionary<string, JsonElement> parameterDict)
             {
@@ -64,63 +72,17 @@ public class CommandLineMcpTool : McpServerTool
 
             string[] fullArgs = [.._commandTokens, ..args];
 
-            // Capture output using StringWriter
-            using var outputWriter = new StringWriter();
-            using var errorWriter = new StringWriter();
-
-            var originalOut = Utils.Reporter.Output;
-            var originalError = Utils.Reporter.Error;
-
-
-            int exitCode;
-            try
-            {
-                Utils.Reporter.SetOutput(new Utils.Reporter(new(outputWriter)));
-                Utils.Reporter.SetError(new Utils.Reporter(new (errorWriter)));
-
-                // Parse and invoke the command.
-                // Set up S.CL output channels to align with our per-tool writers to prevent clobbering - though
-                // commands will often use the Reporter infrastructure too :(
-                InvocationConfiguration invocationConfiguration = new ()
-                {
-                    EnableDefaultExceptionHandler = Parser.InvocationConfiguration.EnableDefaultExceptionHandler,
-                    Output = outputWriter,
-                    Error = errorWriter
-                };
-                exitCode = await Parser.Parse(fullArgs).InvokeAsync(invocationConfiguration, cancellationToken);
-            }
-            finally
-            {
-                Utils.Reporter.SetOutput(originalOut);
-                Utils.Reporter.SetError(originalError);
-            }
-
-            var output = outputWriter.ToString();
-            var error = errorWriter.ToString();
+            // Invoke the command and capture the exit code
+            int exitCode = await _command.Parse(fullArgs, s_parserConfiguration).InvokeAsync(s_invocationConfiguration, cancellationToken);
 
             // Build response text
-            var responseText = new System.Text.StringBuilder();
-            responseText.AppendLine($"Exit Code: {exitCode}");
-
-            if (!string.IsNullOrEmpty(output))
-            {
-                responseText.AppendLine();
-                responseText.AppendLine("Output:");
-                responseText.AppendLine(output);
-            }
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                responseText.AppendLine();
-                responseText.AppendLine("Errors:");
-                responseText.AppendLine(error);
-            }
+            var responseText = $"Command completed with exit code: {exitCode}";
 
             return new CallToolResult
             {
                 Content = new List<ContentBlock>
                 {
-                    new TextContentBlock { Text = responseText.ToString() }
+                    new TextContentBlock { Text = responseText }
                 },
                 IsError = exitCode != 0
             };

@@ -4,7 +4,7 @@
 using System.CommandLine;
 using System.Text.Json;
 
-namespace Microsoft.DotNet.Cli.Commands.Mcp;
+namespace Microsoft.DotNet.Cli.Mcp;
 
 /// <summary>
 /// Converts JSON parameters from MCP tool calls into command-line arguments

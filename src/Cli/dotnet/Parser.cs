@@ -43,6 +43,7 @@ using Microsoft.DotNet.Cli.Commands.VSTest;
 using Microsoft.DotNet.Cli.Commands.Workload;
 using Microsoft.DotNet.Cli.Commands.Workload.Search;
 using Microsoft.DotNet.Cli.Extensions;
+using Microsoft.DotNet.Cli.Mcp;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Cli.Utils.Extensions;
 using Microsoft.TemplateEngine.Cli;
@@ -160,6 +161,7 @@ public static class Parser
         rootCommand.Options.Add(ListSdksOption);
         rootCommand.Options.Add(ListRuntimesOption);
         rootCommand.Options.Add(CliSchemaOption);
+        rootCommand.Options.Add(new McpOption(Product.Version));
 
         // Add argument
         rootCommand.Arguments.Add(DotnetSubCommand);
