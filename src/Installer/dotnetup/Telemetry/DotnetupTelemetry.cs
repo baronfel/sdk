@@ -55,6 +55,13 @@ public sealed class DotnetupTelemetry : IDisposable
     /// </summary>
     public string SessionId { get; }
 
+    public static HashSet<string> s_knownMicrosoftDomains =
+    [
+        with(StringComparer.OrdinalIgnoreCase),
+        "dotnetcli.blob.core.windows.net",
+        "api.nuget.org"
+    ];
+
     private DotnetupTelemetry()
     {
         SessionId = Guid.NewGuid().ToString();
@@ -78,7 +85,15 @@ public sealed class DotnetupTelemetry : IDisposable
                         serviceVersion: GetVersion())
                     .AddAttributes(TelemetryCommonProperties.GetCommonAttributes(SessionId)))
                 .AddSource("Microsoft.Dotnet.Bootstrapper")
-                // need to hook up httpclient instrumentation via OpenTelemetry.Instrumentation.Http so that http errors are auto-propogated correctly.
+                .AddHttpClientInstrumentation(c =>
+                {
+                    c.FilterHttpRequestMessage = (req) =>
+                    {
+                        // Only include telemetry for HTTP requests made to known Microsoft endpoints (e.g. for version resolution or manifest retrieval).
+                        // This helps limit PII in telemetry by excluding requests to arbitrary third-party endpoints.
+                        return req.RequestUri != null && s_knownMicrosoftDomains.Contains(req.RequestUri.Host);
+                    };
+                })
                 .AddSource("Microsoft.Dotnet.Installation");  // Library's ActivitySource
 
             // IMPORTANT: Do NOT add auto-instrumentation (e.g. AddHttpClientInstrumentation)
@@ -89,6 +104,8 @@ public sealed class DotnetupTelemetry : IDisposable
             {
                 o.ConnectionString = ConnectionString;
             });
+
+            builder.AddOtlpExporter();
 
 #if DEBUG // we should support OTLP even in release builds - users want spans around all of the things, even dev tools. we _should_ however be smart about it like Aspire has been.
             // Console exporter for local debugging

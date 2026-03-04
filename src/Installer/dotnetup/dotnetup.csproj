@@ -45,6 +45,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
     <PackageReference Include="System.CommandLine" />
     <PackageReference Include="Spectre.Console" />
     <!-- Telemetry packages (AOT compatible) -->
