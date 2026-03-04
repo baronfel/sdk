@@ -39,7 +39,7 @@ internal class DotnetupProgram
         {
             // Catch-all for unhandled exceptions
             var tags = DotnetupTelemetry.Instance.RecordException(rootActivity, ex);
-            rootActivity?.AddException(ex, tags);
+            rootActivity?.AddException(ex, tags: new TagList([..tags]));
             rootActivity?.SetTag(TelemetryTagNames.Process.ExitCode, 1);
 
             // Log the error and return non-zero exit code
@@ -57,7 +57,9 @@ internal class DotnetupProgram
         }
     }
 
+#pragma warning disable CS0649 // field is never assigned to, will always have default value (false). This is intentional - we want to be able to enable recommended tags via code changes alone when we're ready.
     private static readonly bool s_shouldIncludeRecommendedTags; // Guard rail so that we can write the code and figure out enablement later.
+#pragma warning restore CS0649
 
     private static void ApplyProcessLevelTags(Activity? activity)
     {

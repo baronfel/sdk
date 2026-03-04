@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Security.Cryptography;
 using Microsoft.DotNet.Cli.Telemetry;
 
@@ -26,28 +27,27 @@ internal static class TelemetryCommonProperties
     /// <summary>
     /// Gets common attributes for the OpenTelemetry resource.
     /// </summary>
-    public static IEnumerable<KeyValuePair<string, object>> GetCommonAttributes(string sessionId)
+    public static TagList GetCommonAttributes(string sessionId)
     {
-        var attributes = new Dictionary<string, object>
-        {
-            ["session.id"] = sessionId,
-            ["device.id"] = s_deviceId.Value,
-            ["os.platform"] = RuntimeInformation.OSDescription,
-            ["os.version"] = Environment.OSVersion.VersionString,
-            ["process.arch"] = RuntimeInformation.ProcessArchitecture.ToString(),
-            ["ci.detected"] = s_isCIEnvironment.Value,
-            ["dotnetup.version"] = GetVersion(),
-            ["dev.build"] = s_isDevBuild.Value
-        };
+        var tags = new TagList([
+            new("session.id", sessionId),
+            new("device.id", s_deviceId.Value),
+            new("os.description", RuntimeInformation.OSDescription),
+            new("os.version", Environment.OSVersion.VersionString),
+            new("host.arch", RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()),
+            new("dotnetup.ci", s_isCIEnvironment.Value),
+            new("dotnetup.dev_build", s_isDevBuild.Value)
+        ]);
 
-        // Add LLM environment if detected (same detection as .NET SDK)
         var llmEnv = s_llmEnvironment.Value;
         if (!string.IsNullOrEmpty(llmEnv))
         {
-            attributes["llm.agent"] = llmEnv;
+            // otel convention is gen_ai.provider.name, but since our _values_ are different we should namespace to
+            // prevent confusion until/unless we decide to adopt the convention more broadly across the SDK.
+            tags.Add(new("dotnetup.gen_ai.provider.name", llmEnv));
         }
 
-        return attributes;
+        return tags;
     }
 
     /// <summary>

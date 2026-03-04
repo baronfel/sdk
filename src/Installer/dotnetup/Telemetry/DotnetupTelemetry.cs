@@ -122,17 +122,7 @@ public sealed class DotnetupTelemetry : IDisposable
         }
 
         var activity = CommandSource.StartActivity($"command/{commandName}", ActivityKind.Internal);
-        if (activity != null)
-        {
-            activity.SetTag(TelemetryTagNames.CommandName, commandName);
-            // Add common properties to each span for App Insights customDimensions
-            foreach (var attr in TelemetryCommonProperties.GetCommonAttributes(SessionId))
-            {
-                activity.SetTag(attr.Key, attr.Value?.ToString());
-            }
-        }
-        activity?.SetTag(TelemetryTagNames.Caller, "dotnetup");
-        activity?.SetTag(TelemetryTagNames.SessionId, SessionId);
+        activity?.SetTag(TelemetryTagNames.CommandName, commandName);
         return activity;
     }
 
@@ -142,11 +132,11 @@ public sealed class DotnetupTelemetry : IDisposable
     /// <param name="activity">The activity to record the exception on.</param>
     /// <param name="ex">The exception to record.</param>
     /// <param name="errorCode">Optional error code override.</param>
-    public TagList RecordException(Activity? activity, Exception ex, string? errorCode = null)
+    public IReadOnlyList<KeyValuePair<string, object?>> RecordException(Activity? activity, Exception ex, string? errorCode = null)
     {
         if (activity == null || !Enabled)
         {
-            return default;
+            return [];
         }
 
         var info = ErrorCodeMapper.GetErrorInfo(ex);
@@ -174,13 +164,6 @@ public sealed class DotnetupTelemetry : IDisposable
         {
             return;
         }
-
-        // Add common properties to each span for App Insights customDimensions
-        foreach (var attr in TelemetryCommonProperties.GetCommonAttributes(SessionId))
-        {
-            activity.SetTag(attr.Key, attr.Value?.ToString());
-        }
-        activity.SetTag(TelemetryTagNames.Caller, "dotnetup");
 
         if (properties != null)
         {

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.Dotnet.Installation.Internal;
 
 namespace Microsoft.DotNet.Tools.Bootstrapper.Telemetry;
@@ -51,27 +50,15 @@ public static class ErrorCodeMapper
     /// </summary>
     /// <param name="errorInfo">The error info to apply.</param>
     /// <param name="errorCode">Optional error code override.</param>
-    public static TagList ApplyErrorTags(ExceptionErrorInfo errorInfo, string? errorCode = null)
+    public static IReadOnlyList<KeyValuePair<string, object?>> ApplyErrorTags(ExceptionErrorInfo errorInfo, string? errorCode = null)
     {
-        var tagList = new TagList
-        {
-        };
-        if (errorCode is not null)
-        {
-            tagList.Add("error.code", errorCode);
-        }
-
-        tagList.Add("error.category", errorInfo.Category.ToString().ToLowerInvariant());
-
-        if (errorInfo is { HResult: { } hResult })
-        {
-            tagList.Add("error.hresult", hResult);
-        }
-
-        if (errorInfo is { Details: { } details })
-        {
-            tagList.Add("error.details", details);
-        }
+        List<KeyValuePair<string, object?>> tagList = [
+            new(TelemetryTagNames.ErrorType, errorInfo.ErrorType),
+            new(TelemetryTagNames.ErrorCategory, errorInfo.Category.ToString().ToLowerInvariant()),
+            errorInfo.HResult.HasValue ? new(TelemetryTagNames.ErrorHResult, errorInfo.HResult.Value) : default,
+            errorInfo.Details is not null ? new(TelemetryTagNames.ErrorDetails, errorInfo.Details) : default,
+            errorCode is not null ? new(TelemetryTagNames.ErrorCode, errorCode) : default
+        ];
         return tagList;
     }
 

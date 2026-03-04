@@ -49,7 +49,7 @@ public abstract class CommandBase
         }
         finally
         {
-            _commandActivity?.SetTag(TelemetryTagNames.ExitCode, _exitCode);
+            _commandActivity?.SetTag(TelemetryTagNames.Process.ExitCode, _exitCode);
             _commandActivity?.SetStatus(_exitCode == 0 ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
             _commandActivity?.Dispose();
         }

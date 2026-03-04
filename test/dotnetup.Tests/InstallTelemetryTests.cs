@@ -256,28 +256,24 @@ public class ApplyErrorTagsTests
     {
         using var listener = CreateTestListener(out var captured);
 
+        var errorInfo = new ExceptionErrorInfo(
+            ErrorType: "DiskFull",
+            HResult: unchecked((int)0x80070070),
+            StatusCode: null,
+            Details: "ERROR_DISK_FULL",
+            Category: ErrorCategory.User);
+        var tagList = ErrorCodeMapper.ApplyErrorTags(errorInfo);
         using var source = new ActivitySource("ApplyErrorTags.Test.1");
-        using (var activity = source.StartActivity("test"))
+        using (var activity = source.StartActivity("test", ActivityKind.Internal, parentContext: default, tags: tagList))
         {
             Assert.NotNull(activity);
-
-            var errorInfo = new ExceptionErrorInfo(
-                ErrorType: "DiskFull",
-                HResult: unchecked((int)0x80070070),
-                StatusCode: null,
-                Details: "ERROR_DISK_FULL",
-                StackTrace: "at SomeMethod() in InstallExecutor.cs:line 42",
-                Category: ErrorCategory.User);
-
-            ErrorCodeMapper.ApplyErrorTags(activity, errorInfo);
         }
 
         var a = Assert.Single(captured);
         Assert.Equal("DiskFull", a.GetTagItem("error.type"));
-        Assert.Equal("user", a.GetTagItem("error.category"));
-        Assert.Equal(unchecked((int)0x80070070), a.GetTagItem("error.hresult"));
-        Assert.Equal("ERROR_DISK_FULL", a.GetTagItem("error.details"));
-        Assert.Equal("at SomeMethod() in InstallExecutor.cs:line 42", a.GetTagItem("error.stack_trace"));
+        Assert.Equal("user", a.GetTagItem("dotnetup.error.category"));
+        Assert.Equal(unchecked((int)0x80070070), a.GetTagItem("dotnetup.error.hresult"));
+        Assert.Equal("ERROR_DISK_FULL", a.GetTagItem("dotnetup.error.details"));
     }
 
     [Fact]
@@ -285,29 +281,23 @@ public class ApplyErrorTagsTests
     {
         using var listener = CreateTestListener(out var captured);
 
+        var errorInfo = new ExceptionErrorInfo(
+            ErrorType: "HttpError",
+            StatusCode: 404,
+            Category: ErrorCategory.Product);
+        var tagList = ErrorCodeMapper.ApplyErrorTags(errorInfo, errorCode: "Http404");
         using var source = new ActivitySource("ApplyErrorTags.Test.2");
-        using (var activity = source.StartActivity("test"))
+        using (var activity = source.StartActivity("test", ActivityKind.Internal, parentContext: default, tags: tagList))
         {
             Assert.NotNull(activity);
-
-            var errorInfo = new ExceptionErrorInfo(
-                ErrorType: "HttpError",
-                HResult: null,
-                StatusCode: 404,
-                Details: null,
-                StackTrace: null,
-                Category: ErrorCategory.Product);
-
-            ErrorCodeMapper.ApplyErrorTags(activity, errorInfo, errorCode: "Http404");
         }
 
         var a = Assert.Single(captured);
         Assert.Equal("HttpError", a.GetTagItem("error.type"));
-        Assert.Equal("Http404", a.GetTagItem("error.code"));
-        Assert.Equal("product", a.GetTagItem("error.category"));
-        Assert.Equal(404, a.GetTagItem("error.http_status"));
-        Assert.Null(a.GetTagItem("error.hresult"));
-        Assert.Null(a.GetTagItem("error.details"));
+        Assert.Equal("Http404", a.GetTagItem("dotnetup.error.code"));
+        Assert.Equal("product", a.GetTagItem("dotnetup.error.category"));
+        Assert.Null(a.GetTagItem("dotnetup.error.hresult"));
+        Assert.Null(a.GetTagItem("dotnetup.error.details"));
     }
 
     [Fact]
@@ -315,13 +305,9 @@ public class ApplyErrorTagsTests
     {
         var errorInfo = new ExceptionErrorInfo(
             ErrorType: "Test",
-            HResult: null,
-            StatusCode: null,
-            Details: null,
-            StackTrace: null,
             Category: ErrorCategory.Product);
 
-        var ex = Record.Exception(() => ErrorCodeMapper.ApplyErrorTags(null, errorInfo));
+        var ex = Record.Exception(() => ErrorCodeMapper.ApplyErrorTags(errorInfo));
 
         Assert.Null(ex);
     }
@@ -331,57 +317,24 @@ public class ApplyErrorTagsTests
     {
         using var listener = CreateTestListener(out var captured);
 
+        var errorInfo = new ExceptionErrorInfo(
+            ErrorType: "GenericError",
+            Category: ErrorCategory.Product);
+        var tagList = ErrorCodeMapper.ApplyErrorTags(errorInfo);
         using var source = new ActivitySource("ApplyErrorTags.Test.3");
-        using (var activity = source.StartActivity("test"))
+        using (var activity = source.StartActivity("test", ActivityKind.Internal, parentContext: default, tags: tagList))
         {
             Assert.NotNull(activity);
-
-            var errorInfo = new ExceptionErrorInfo(
-                ErrorType: "GenericError",
-                HResult: null,
-                StatusCode: null,
-                Details: null,
-                StackTrace: null,
-                Category: ErrorCategory.Product);
-
-            ErrorCodeMapper.ApplyErrorTags(activity, errorInfo);
         }
 
         var a = Assert.Single(captured);
         Assert.Equal("GenericError", a.GetTagItem("error.type"));
-        Assert.Equal("product", a.GetTagItem("error.category"));
+        Assert.Equal("product", a.GetTagItem("dotnetup.error.category"));
         // Optional tags should not be set
-        Assert.Null(a.GetTagItem("error.hresult"));
-        Assert.Null(a.GetTagItem("error.http_status"));
-        Assert.Null(a.GetTagItem("error.details"));
-        Assert.Null(a.GetTagItem("error.stack_trace"));
-        Assert.Null(a.GetTagItem("error.code"));
-    }
-
-    [Fact]
-    public void ApplyErrorTags_SetsActivityStatusToError()
-    {
-        using var listener = CreateTestListener(out var captured);
-
-        using var source = new ActivitySource("ApplyErrorTags.Test.4");
-        using (var activity = source.StartActivity("test"))
-        {
-            Assert.NotNull(activity);
-
-            var errorInfo = new ExceptionErrorInfo(
-                ErrorType: "TestError",
-                HResult: null,
-                StatusCode: null,
-                Details: null,
-                StackTrace: null,
-                Category: ErrorCategory.Product);
-
-            ErrorCodeMapper.ApplyErrorTags(activity, errorInfo);
-        }
-
-        var a = Assert.Single(captured);
-        Assert.Equal(ActivityStatusCode.Error, a.Status);
-        Assert.Equal("TestError", a.StatusDescription);
+        Assert.Null(a.GetTagItem("dotnetup.error.hresult"));
+        Assert.Null(a.GetTagItem("dotnetup.error.http_status"));
+        Assert.Null(a.GetTagItem("dotnetup.error.details"));
+        Assert.Null(a.GetTagItem("dotnetup.error.code"));
     }
 
     private static ActivityListener CreateTestListener(out List<Activity> captured)

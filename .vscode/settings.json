@@ -1,7 +1,7 @@
 {
     "dotnet.testWindow.disableAutoDiscovery": true,
     "dotnet.testWindow.disableBuildOnRun": true,
-    "dotnet.defaultSolution": "cli.slnf",
+    "dotnet.defaultSolution": "dotnetup.slnf",
     "files.associations": {
       "*.slnf": "json",
       "*.props": "xml",

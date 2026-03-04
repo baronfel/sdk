@@ -84,10 +84,6 @@ public class ErrorCodeMapperTests
         var info = ErrorCodeMapper.GetErrorInfo(outer);
 
         Assert.Equal("HttpRequestException", info.ErrorType);
-        // Inner exception types should be included in the stack trace
-        Assert.NotNull(info.StackTrace);
-        Assert.Contains("System.IO.IOException", info.StackTrace);
-        Assert.Contains("System.Net.Sockets.SocketException", info.StackTrace);
     }
 
     [Fact]
@@ -122,19 +118,6 @@ public class ErrorCodeMapperTests
     }
 
     [Fact]
-    public void GetErrorInfo_ThrownException_HasStackTrace()
-    {
-        // Throw from a method to get a real stack trace
-        var ex = ThrowTestException();
-
-        var info = ErrorCodeMapper.GetErrorInfo(ex);
-
-        Assert.Equal("InvalidOperation", info.ErrorType);
-        Assert.NotNull(info.StackTrace);
-        Assert.Contains("ThrowTestException", info.StackTrace);
-    }
-
-    [Fact]
     public void GetErrorInfo_AllFieldsPopulated_ForIOExceptionWithInnerException()
     {
         // Create a realistic exception scenario - IOException with inner exception
@@ -143,10 +126,7 @@ public class ErrorCodeMapperTests
 
         var info = ErrorCodeMapper.GetErrorInfo(outer);
 
-        // Verify inner exception type is included in stack trace
         Assert.Equal("IOException", info.ErrorType);
-        Assert.NotNull(info.StackTrace);
-        Assert.Contains("System.UnauthorizedAccessException", info.StackTrace);
     }
 
     [Fact]
@@ -173,24 +153,6 @@ public class ErrorCodeMapperTests
         {
             return ex;
         }
-    }
-
-    [Fact]
-    public void GetErrorInfo_LongExceptionChain_IncludesInnerExceptionsInStackTrace()
-    {
-        // Create a chain of typed exceptions
-        Exception ex = new InvalidOperationException("Root");
-        for (int i = 0; i < 10; i++)
-        {
-            ex = new IOException($"Wrapper {i}", ex);
-        }
-
-        var info = ErrorCodeMapper.GetErrorInfo(ex);
-
-        // Stack trace should include inner exception types
-        Assert.NotNull(info.StackTrace);
-        Assert.Contains("System.IO.IOException", info.StackTrace);
-        Assert.Contains("System.InvalidOperationException", info.StackTrace);
     }
 
     [Fact]
