@@ -9,9 +9,40 @@ namespace Microsoft.DotNet.Tools.Bootstrapper.Telemetry;
 /// </summary>
 internal static class TelemetryTagNames
 {
+    /// <summary>
+    /// Tag names for CLI applications. See <see href="https://opentelemetry.io/docs/specs/semconv/cli/cli-spans/">OpenTelemetry CLI Semantic Conventions</see>.
+    /// </summary>
+    public  static class Process
+    {
+        /// <summary>
+        /// Required data point. The name of the executable, without the path or file extension. For example, "dotnet" or "msbuild".
+        /// </summary>
+        public static string ExecutableName = "process.executable_name";
+
+        /// <summary>
+        /// Required data point. The operating system process ID (PID) of the process.
+        /// </summary>
+        public static string ProcessId = "process.pid";
+
+        /// <summary>
+        /// Required data point. The exit code of the process.
+        /// </summary>
+        public const string ExitCode = "process.exit.code";
+
+        /// <summary>
+        /// Recommended data point. Command line arguments passed to the process. Use with caution as they may contain personally identifiable information (PII) if user directories or other sensitive data are included. Consider redacting or limiting this data in production environments.
+        /// </summary>
+        public static string CommandArgs = "process.command_args";
+
+        /// <summary>
+        /// Recommended data point. Full path to the executable, including file name. Use with caution as it may contain personally identifiable information (PII) if user directories are included.
+        /// </summary>
+        public static string ExecutablePath = "process.executable_path";
+    }
+
     // Command-level tags
     public const string CommandName = "command.name";
-    public const string ExitCode = "exit.code";
+
     public const string SessionId = "session.id";
     public const string Caller = "caller";
 

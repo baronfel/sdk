@@ -78,6 +78,7 @@ public sealed class DotnetupTelemetry : IDisposable
                         serviceVersion: GetVersion())
                     .AddAttributes(TelemetryCommonProperties.GetCommonAttributes(SessionId)))
                 .AddSource("Microsoft.Dotnet.Bootstrapper")
+                // need to hook up httpclient instrumentation via OpenTelemetry.Instrumentation.Http so that http errors are auto-propogated correctly.
                 .AddSource("Microsoft.Dotnet.Installation");  // Library's ActivitySource
 
             // IMPORTANT: Do NOT add auto-instrumentation (e.g. AddHttpClientInstrumentation)
@@ -89,11 +90,13 @@ public sealed class DotnetupTelemetry : IDisposable
                 o.ConnectionString = ConnectionString;
             });
 
-#if DEBUG
+#if DEBUG // we should support OTLP even in release builds - users want spans around all of the things, even dev tools. we _should_ however be smart about it like Aspire has been.
             // Console exporter for local debugging
             if (Environment.GetEnvironmentVariable("DOTNETUP_TELEMETRY_DEBUG") == "1")
             {
                 builder.AddConsoleExporter();
+                // we should also have the OTel exporter from OpenTelemetry.Exporter.OpenTelemetryProtocol
+                //builder.AddOtlpExporter();
             }
 #endif
 
@@ -139,15 +142,15 @@ public sealed class DotnetupTelemetry : IDisposable
     /// <param name="activity">The activity to record the exception on.</param>
     /// <param name="ex">The exception to record.</param>
     /// <param name="errorCode">Optional error code override.</param>
-    public void RecordException(Activity? activity, Exception ex, string? errorCode = null)
+    public TagList RecordException(Activity? activity, Exception ex, string? errorCode = null)
     {
         if (activity == null || !Enabled)
         {
-            return;
+            return default;
         }
 
-        var errorInfo = ErrorCodeMapper.GetErrorInfo(ex);
-        ErrorCodeMapper.ApplyErrorTags(activity, errorInfo, errorCode);
+        var info = ErrorCodeMapper.GetErrorInfo(ex);
+        return ErrorCodeMapper.ApplyErrorTags(info, errorCode);
     }
 
     /// <summary>

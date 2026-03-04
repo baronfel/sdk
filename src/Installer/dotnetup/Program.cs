@@ -24,23 +24,23 @@ internal class DotnetupProgram
         // Show first-run telemetry notice if needed
         FirstRunNotice.ShowIfFirstRun(DotnetupTelemetry.Instance.Enabled);
 
-        // Start root activity for the entire process
-        using var rootActivity = DotnetupTelemetry.Instance.Enabled
-            ? DotnetupTelemetry.CommandSource.StartActivity("dotnetup", ActivityKind.Internal)
-            : null;
+        // Start root activity for the entire process - if no one is configured this will no-op
+        using var rootActivity = DotnetupTelemetry.CommandSource.StartActivity("dotnetup", ActivityKind.Internal);
+        ApplyProcessLevelTags(rootActivity);
 
         try
         {
             var result = Parser.Invoke(args);
-            rootActivity?.SetTag(TelemetryTagNames.ExitCode, result);
+            rootActivity?.SetTag(TelemetryTagNames.Process.ExitCode, result);
             rootActivity?.SetStatus(result == 0 ? ActivityStatusCode.Ok : ActivityStatusCode.Error);
             return result;
         }
         catch (Exception ex)
         {
             // Catch-all for unhandled exceptions
-            DotnetupTelemetry.Instance.RecordException(rootActivity, ex);
-            rootActivity?.SetTag(TelemetryTagNames.ExitCode, 1);
+            var tags = DotnetupTelemetry.Instance.RecordException(rootActivity, ex);
+            rootActivity?.AddException(ex, tags);
+            rootActivity?.SetTag(TelemetryTagNames.Process.ExitCode, 1);
 
             // Log the error and return non-zero exit code
             Console.Error.WriteLine($"Error: {ex.Message}");
@@ -54,6 +54,29 @@ internal class DotnetupProgram
             // Ensure telemetry is flushed before exit
             DotnetupTelemetry.Instance.Flush();
             DotnetupTelemetry.Instance.Dispose();
+        }
+    }
+
+    private static readonly bool s_shouldIncludeRecommendedTags; // Guard rail so that we can write the code and figure out enablement later.
+
+    private static void ApplyProcessLevelTags(Activity? activity)
+    {
+        if (activity == null)
+        {
+            return;
+        }
+
+        // required tags for CLI semantic conventions
+        activity.SetTag(TelemetryTagNames.Process.ExecutableName, "dotnetup");
+        activity.SetTag(TelemetryTagNames.Process.ProcessId, Environment.ProcessId);
+
+        // recommended tags for CLI semantic conventions -
+        if (s_shouldIncludeRecommendedTags)
+        {
+            var args = Environment.GetCommandLineArgs();
+            activity.SetTag(TelemetryTagNames.Process.CommandArgs, args);
+            // we want argv[0] here, which is the fully-qualified path to the binary being run.
+            activity.SetTag(TelemetryTagNames.Process.ExecutablePath, Environment.ProcessPath);
         }
     }
 }
