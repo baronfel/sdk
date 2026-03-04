@@ -82,12 +82,11 @@ public class TelemetryCommonPropertiesTests
 
         Assert.Contains("session.id", attributes.Keys);
         Assert.Contains("device.id", attributes.Keys);
-        Assert.Contains("os.platform", attributes.Keys);
+        Assert.Contains("os.description", attributes.Keys);
         Assert.Contains("os.version", attributes.Keys);
-        Assert.Contains("process.arch", attributes.Keys);
-        Assert.Contains("ci.detected", attributes.Keys);
-        Assert.Contains("dotnetup.version", attributes.Keys);
-        Assert.Contains("dev.build", attributes.Keys);
+        Assert.Contains("host.arch", attributes.Keys);
+        Assert.Contains("dotnetup.ci", attributes.Keys);
+        Assert.Contains("dotnetup.dev_build", attributes.Keys);
     }
 
     [Fact]
@@ -106,7 +105,7 @@ public class TelemetryCommonPropertiesTests
         var attributes = TelemetryCommonProperties.GetCommonAttributes("test-session")
             .ToDictionary(kv => kv.Key, kv => kv.Value);
 
-        var osPlatform = attributes["os.platform"] as string;
+        var osPlatform = attributes["os.description"] as string;
         // OSDescription returns the full OS description (e.g., "Microsoft Windows 10.0.26200")
         Assert.False(string.IsNullOrEmpty(osPlatform));
     }
@@ -117,8 +116,8 @@ public class TelemetryCommonPropertiesTests
         var attributes = TelemetryCommonProperties.GetCommonAttributes("test-session")
             .ToDictionary(kv => kv.Key, kv => kv.Value);
 
-        var arch = attributes["process.arch"] as string;
-        Assert.Contains(arch, new[] { "X86", "X64", "Arm", "Arm64", "Wasm", "S390x", "LoongArch64", "Armv6", "Ppc64le", "RiscV64" });
+        var arch = attributes["host.arch"] as string;
+        Assert.Contains(arch, new[] { "x86", "x64", "arm", "arm64", "wasm", "s390x", "loongarch64", "armv6", "ppc64le", "riscv64" });
     }
 
     [Fact]
@@ -129,16 +128,6 @@ public class TelemetryCommonPropertiesTests
 
         var deviceId = attributes["device.id"] as string;
         Assert.False(string.IsNullOrEmpty(deviceId));
-    }
-
-    [Fact]
-    public void GetCommonAttributes_VersionIsNotEmpty()
-    {
-        var attributes = TelemetryCommonProperties.GetCommonAttributes("test-session")
-            .ToDictionary(kv => kv.Key, kv => kv.Value);
-
-        var version = attributes["dotnetup.version"] as string;
-        Assert.False(string.IsNullOrEmpty(version));
     }
 }
 
