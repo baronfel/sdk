@@ -9,6 +9,8 @@ namespace Microsoft.DotNet.Tools.Bootstrapper;
 
 internal class DotnetupProgram
 {
+    private static readonly TimeSpan s_telemetryFlushTimeout = TimeSpan.FromMilliseconds(100);
+
     public static int Main(string[] args)
     {
         // Handle --debug flag using the standard .NET SDK pattern
@@ -39,7 +41,7 @@ internal class DotnetupProgram
         {
             // Catch-all for unhandled exceptions
             var tags = DotnetupTelemetry.Instance.RecordException(rootActivity, ex);
-            rootActivity?.AddException(ex, tags: new TagList([..tags]));
+            rootActivity?.AddException(ex, tags: new TagList([.. tags]));
             rootActivity?.SetTag(TelemetryTagNames.Process.ExitCode, 1);
 
             // Log the error and return non-zero exit code
@@ -52,7 +54,7 @@ internal class DotnetupProgram
         finally
         {
             // Ensure telemetry is flushed before exit
-            DotnetupTelemetry.Instance.Flush();
+            DotnetupTelemetry.Instance.Flush((int)s_telemetryFlushTimeout.TotalMilliseconds);
             DotnetupTelemetry.Instance.Dispose();
         }
     }

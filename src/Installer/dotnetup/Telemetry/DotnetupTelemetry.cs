@@ -112,8 +112,6 @@ public sealed class DotnetupTelemetry : IDisposable
             if (Environment.GetEnvironmentVariable("DOTNETUP_TELEMETRY_DEBUG") == "1")
             {
                 builder.AddConsoleExporter();
-                // we should also have the OTel exporter from OpenTelemetry.Exporter.OpenTelemetryProtocol
-                //builder.AddOtlpExporter();
             }
 #endif
 
