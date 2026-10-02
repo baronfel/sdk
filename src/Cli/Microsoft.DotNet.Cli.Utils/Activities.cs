@@ -36,21 +36,12 @@ public static class Activities
         // Collect metrics on demand.
         Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
             s_activityDuration.Enabled ? ActivitySamplingResult.AllData : ActivitySamplingResult.None,
-        ActivityStopped = activity =>
-        {
-            if (s_activityDuration.Enabled)
-            {
-                s_activityDuration.Record(
-                    activity.Duration.TotalSeconds,
-                    new KeyValuePair<string, object?>("activity.name", activity.OperationName));
-            }
-        },
+        ActivityStopped = activity => s_activityDuration.Record(
+            activity.Duration.TotalSeconds,
+            new KeyValuePair<string, object?>("activity.name", activity.OperationName)),
     };
 
-    static Activities()
-    {
-        ActivitySource.AddActivityListener(s_metricsListener);
-    }
+    internal static void EnableMetricsListener() => ActivitySource.AddActivityListener(s_metricsListener);
 
     /// <summary>
     /// The environment variable used to transfer the chain of parent activity IDs.

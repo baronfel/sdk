@@ -191,6 +191,8 @@ public class TelemetryClient : ITelemetryClient
             return;
         }
 
+        Activities.EnableMetricsListener();
+
         if (s_metricsProvider is null || s_tracerProvider is null)
         {
             // Create a new OTel meter and tracer provider.

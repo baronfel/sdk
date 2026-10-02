@@ -9,8 +9,6 @@ using Microsoft.DotNet.Cli.Commands.Restore;
 using Microsoft.DotNet.Cli.Commands.Run;
 using Microsoft.DotNet.Cli.Utils;
 using OpenTelemetry;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using BinaryLog = Microsoft.Build.Logging.StructuredLogger.BinaryLog;
 using PublishCommand = Microsoft.DotNet.Cli.Commands.Publish.PublishCommand;
@@ -60,7 +58,7 @@ public sealed class MSBuildActivityTests : SdkTest
     }
 
     [TestMethod]
-    public void PhysicalPublishExportsSubmissionHistograms()
+    public void PhysicalPublishExportsSubmissionSpansWithTelemetryDisabled()
     {
         var asset = TestAssetsManager.CopyTestAsset("HelloWorld")
             .WithSource()
@@ -98,7 +96,7 @@ public sealed class MSBuildActivityTests : SdkTest
         command.Execute().Should().Be(0);
         Activity.Current.Should().BeSameAs(parent);
 
-        Activity[] submissions = exported.AssertSubmissionMeasurements(expectedCount: 1, parent);
+        Activity[] submissions = exported.AssertSubmissionSpans(expectedCount: 1, parent);
         (discovery.StartTimeUtc + discovery.Duration).Should().BeOnOrBefore(submissions[0].StartTimeUtc);
         AssertBuildBoundaries(binlogArgument, submissions);
         TelemetryClient.Instance.Should().BeNull("local diagnostic collection must not initialize SDK telemetry");
@@ -136,7 +134,7 @@ public sealed class MSBuildActivityTests : SdkTest
         exitCode.Should().Be(1);
 
         Activity.Current.Should().BeSameAs(parent);
-        Activity[] submissions = exported.AssertSubmissionMeasurements(expectedCount: 1, parent);
+        Activity[] submissions = exported.AssertSubmissionSpans(expectedCount: 1, parent);
         AssertBuildBoundaries(binlogArgument, submissions);
     }
 
@@ -169,7 +167,7 @@ public sealed class MSBuildActivityTests : SdkTest
 
         exitCode.Should().Be(0);
         Activity.Current.Should().BeSameAs(parent);
-        Activity[] submissions = exported.AssertSubmissionMeasurements(expectedCount: 1, parent);
+        Activity[] submissions = exported.AssertSubmissionSpans(expectedCount: 1, parent);
         AssertBuildBoundaries(binlogArgument, submissions);
         File.Exists(Path.Combine(output, "Program.dll")).Should().BeTrue();
     }
@@ -203,7 +201,7 @@ public sealed class MSBuildActivityTests : SdkTest
 
     private void Restore(string project)
     {
-        new DotnetCommand(Log, "restore", project, "--disable-build-servers")
+        new DotnetCommand(Log, "restore", project, "--disable-build-servers", BinLogArgument([Guid.NewGuid().ToString("N")]))
             .WithEnvironmentVariable("DOTNET_CLI_TELEMETRY_OPTOUT", "1")
             .Execute()
             .Should()
@@ -213,9 +211,7 @@ public sealed class MSBuildActivityTests : SdkTest
     private sealed class ActivityExports : IDisposable
     {
         private readonly List<Activity> _activities = [];
-        private readonly List<Metric> _metrics = [];
         private readonly TracerProvider _traces;
-        private readonly MeterProvider _meter;
 
         public ActivityExports()
         {
@@ -223,11 +219,6 @@ public sealed class MSBuildActivityTests : SdkTest
                 .AddSource(Activities.Source.Name, Activities.PerformanceSource.Name)
                 .SetSampler(new AlwaysOnSampler())
                 .AddInMemoryExporter(_activities)
-                .Build();
-            // A manual reader collects once, without periodic snapshots or timer-based assertions.
-            _meter = Sdk.CreateMeterProviderBuilder()
-                .AddMeter(Activities.PerformanceSource.Name)
-                .AddReader(new BaseExportingMetricReader(new InMemoryExporter<Metric>(_metrics)))
                 .Build();
         }
 
@@ -246,10 +237,9 @@ public sealed class MSBuildActivityTests : SdkTest
             return discovery;
         }
 
-        public Activity[] AssertSubmissionMeasurements(int expectedCount, Activity? parent)
+        public Activity[] AssertSubmissionSpans(int expectedCount, Activity? parent)
         {
             _traces.ForceFlush().Should().BeTrue();
-            _meter.ForceFlush().Should().BeTrue();
 
             Activity[] submissions = _activities
                 .Where(activity => activity.OperationName == "msbuild-submission")
@@ -263,40 +253,11 @@ public sealed class MSBuildActivityTests : SdkTest
                 activity.ParentSpanId.Should().Be(parentSpanId);
             }
 
-            Metric metric = _metrics.Should().ContainSingle(
-                metric => metric.Name == "dotnet.cli.activity.duration").Subject;
-            metric.MeterName.Should().Be("dotnet-cli-perf");
-            metric.Unit.Should().Be("s");
-            metric.MetricType.Should().Be(MetricType.Histogram);
-
-            HashSet<string> measuredActivities = [];
-            foreach (ref readonly MetricPoint point in metric.GetMetricPoints())
-            {
-                string? activityName = null;
-                foreach (var tag in point.Tags)
-                {
-                    if (tag.Key == "activity.name")
-                    {
-                        activityName = tag.Value.Should().BeOfType<string>().Subject;
-                    }
-                }
-
-                activityName.Should().NotBeNull();
-                measuredActivities.Add(activityName!).Should().BeTrue("each activity name has a distinct histogram series");
-                Activity[] activities = _activities.Where(activity => activity.OperationName == activityName).ToArray();
-                activities.Should().NotBeEmpty();
-                point.GetHistogramCount().Should().Be(activities.Length);
-                point.GetHistogramSum().Should().BeApproximately(
-                    activities.Sum(activity => activity.Duration.TotalSeconds), 1e-9);
-            }
-
-            measuredActivities.Should().BeEquivalentTo(_activities.Select(activity => activity.OperationName).Distinct());
             return submissions;
         }
 
         public void Dispose()
         {
-            _meter.Dispose();
             _traces.Dispose();
         }
     }

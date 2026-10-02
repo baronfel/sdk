@@ -16,9 +16,10 @@ public sealed class ActivitiesTests : SdkTest
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public void StoppingAnActivityRecordsItsDurationInSeconds(bool performanceSource)
+    public void StoppingAnActivityRecordsItsDurationOnceAfterRepeatedListenerRegistration(bool performanceSource)
     {
         using var metrics = new ActivityMeasurements();
+        Activities.EnableMetricsListener();
         ActivitySource source = performanceSource ? Activities.PerformanceSource : Activities.Source;
         using Activity? activity = source.StartActivity(
             "test-operation",
@@ -96,8 +97,7 @@ public sealed class ActivitiesTests : SdkTest
 
         public ActivityMeasurements(string meterName = "dotnet-cli-perf")
         {
-            // Initialize the production source and its bridge before discovering instruments.
-            _ = Activities.Source;
+            Activities.EnableMetricsListener();
             _listener.InstrumentPublished = (instrument, listener) =>
             {
                 if (instrument.Meter.Name == meterName && instrument.Name == "dotnet.cli.activity.duration")

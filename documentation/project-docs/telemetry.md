@@ -110,8 +110,9 @@ log are unaffected. Set `DOTNET_CLI_TELEMETRY_DISABLE_TRACE_EXPORT` to disable i
 ## CLI Activity Duration Metrics
 
 Performance collectors such as PerfStar can opt into CLI phase timings by enabling
-the `dotnet-cli-perf` meter. Built-in SDK telemetry and its OTLP exporter do not
-enable this collection.
+the `dotnet-cli-perf` meter. The SDK registers the activity-to-metrics listener only
+when SDK telemetry is enabled. `DOTNET_CLI_TELEMETRY_OPTOUT` prevents this registration.
+Built-in SDK telemetry and its OTLP exporter do not enable the performance meter.
 
 | Meter | Instrument | Unit | Tag |
 | --- | --- | --- | --- |
